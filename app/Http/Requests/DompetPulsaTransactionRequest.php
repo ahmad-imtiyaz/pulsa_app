@@ -1,0 +1,64 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class DompetPulsaTransactionRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'dompet_pulsa_id' => ['required', 'exists:dompet_pulsa,id'],
+            'jenis' => ['required', Rule::in(['topup', 'penjualan'])],
+            'tanggal' => ['required', 'date'],
+            'nominal' => ['required', 'numeric', 'min:0'],
+            'harga_jual' => ['nullable', 'numeric', 'min:0'],
+            'nomor_hp' => ['nullable', 'string', 'max:20'],
+            'provider' => ['nullable', 'string', 'max:100'],
+            'keterangan' => ['nullable', 'string'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'dompet_pulsa_id.required' => 'Dompet pulsa wajib dipilih.',
+            'dompet_pulsa_id.exists' => 'Dompet pulsa tidak ditemukan.',
+            'jenis.required' => 'Jenis transaksi wajib dipilih.',
+            'jenis.in' => 'Jenis transaksi tidak valid.',
+            'tanggal.required' => 'Tanggal wajib diisi.',
+            'tanggal.date' => 'Format tanggal tidak valid.',
+            'nominal.required' => 'Nominal wajib diisi.',
+            'nominal.numeric' => 'Nominal harus berupa angka.',
+        ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            if ($this->jenis === 'penjualan') {
+                if (empty($this->harga_jual)) {
+                    $validator->errors()->add('harga_jual', 'Harga jual wajib diisi untuk transaksi penjualan.');
+                } elseif ($this->harga_jual < $this->nominal) {
+                    $validator->errors()->add('harga_jual', 'Harga jual tidak boleh lebih kecil dari harga modal.');
+                }
+                if (empty($this->nomor_hp)) {
+                    $validator->errors()->add('nomor_hp', 'Nomor HP wajib diisi untuk transaksi penjualan.');
+                }
+            }
+
+            if ($this->jenis === 'topup') {
+                if ($this->harga_jual) {
+                    $validator->errors()->add('harga_jual', 'Harga jual tidak boleh diisi untuk transaksi topup.');
+                }
+            }
+        });
+    }
+}
