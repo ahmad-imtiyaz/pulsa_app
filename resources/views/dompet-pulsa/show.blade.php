@@ -8,6 +8,7 @@
             <div class="flex items-center space-x-3">
                 <a href="{{ route('dompet-pulsa.transaksi.create', $dompetPulsa) }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Tambah Transaksi</a>
                 <a href="{{ route('dompet-pulsa.edit', $dompetPulsa) }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Edit</a>
+                <a href="{{ route('dompet-pulsa.index') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Kembali ke Daftar</a>
             </div>
         </div>
 
