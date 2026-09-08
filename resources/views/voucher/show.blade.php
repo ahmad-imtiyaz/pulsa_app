@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">{{ $voucher->nama }} ({{ $voucher->kode }})</h1>
-                <p class="text-gray-500">{{ $voucher->jenis }} | Nilai: Rp {{ number_format($voucher->nilai, 0, ',', '.') }}</p>
+                <p class="text-gray-500">{{ $voucher->jenis }}</p>
             </div>
             <div class="flex items-center space-x-3">
                 <a href="{{ route('voucher.transaksi.create', $voucher) }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Tambah Transaksi</a>

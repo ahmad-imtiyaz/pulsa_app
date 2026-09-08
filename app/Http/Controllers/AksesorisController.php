@@ -6,7 +6,6 @@ use App\Http\Requests\AksesorisRequest;
 use App\Http\Requests\AksesorisTransactionRequest;
 use App\Models\Aksesoris;
 use App\Models\AksesorisTransaction;
-use App\Models\Voucher;
 use App\Services\DailySummaryService;
 use Carbon\Carbon;
 
@@ -87,19 +86,6 @@ class AksesorisController extends Controller
         $data['aksesoris_id'] = $aksesoris->id;
         $data['total_modal'] = $data['harga_modal'] * $data['jumlah'];
 
-        // Apply voucher discount if voucher is selected
-        if (! empty($data['voucher_id']) && $data['jenis'] === 'penjualan') {
-            $voucher = Voucher::find($data['voucher_id']);
-            if ($voucher) {
-                // Check voucher stock
-                if ($voucher->hitungStokTersedia() <= 0) {
-                    return back()->withErrors(['voucher_id' => 'Stok voucher sudah habis.'])->withInput();
-                }
-                // Reduce harga_jual by voucher nilai per unit
-                $data['harga_jual'] = max(0, $data['harga_jual'] - $voucher->nilai);
-            }
-        }
-
         if ($data['jenis'] === 'penjualan') {
             $data['total_penjualan'] = $data['harga_jual'] * $data['jumlah'];
             $data['laba'] = $data['total_penjualan'] - $data['total_modal'];
@@ -107,7 +93,6 @@ class AksesorisController extends Controller
             $data['total_penjualan'] = null;
             $data['laba'] = 0;
             $data['harga_jual'] = null;
-            $data['voucher_id'] = null; // Voucher only for penjualan
         }
 
         $transaction = AksesorisTransaction::create($data);

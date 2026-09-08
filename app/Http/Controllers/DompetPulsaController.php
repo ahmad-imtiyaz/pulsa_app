@@ -6,7 +6,6 @@ use App\Http\Requests\DompetPulsaRequest;
 use App\Http\Requests\DompetPulsaTransactionRequest;
 use App\Models\DompetPulsa;
 use App\Models\DompetPulsaTransaction;
-use App\Models\Voucher;
 use App\Services\DailySummaryService;
 use Carbon\Carbon;
 
@@ -108,25 +107,11 @@ class DompetPulsaController extends Controller
         $data = $request->validated();
         $data['dompet_pulsa_id'] = $dompetPulsa->id;
 
-        // Apply voucher discount if voucher is selected
-        if (! empty($data['voucher_id']) && $data['jenis'] === 'penjualan') {
-            $voucher = Voucher::find($data['voucher_id']);
-            if ($voucher) {
-                // Check voucher stock
-                if ($voucher->hitungStokTersedia() <= 0) {
-                    return back()->withErrors(['voucher_id' => 'Stok voucher sudah habis.'])->withInput();
-                }
-                // Reduce harga_jual by voucher nilai
-                $data['harga_jual'] = max(0, $data['harga_jual'] - $voucher->nilai);
-            }
-        }
-
         if ($data['jenis'] === 'penjualan') {
             $data['laba'] = $data['harga_jual'] - $data['nominal'];
         } else {
             $data['laba'] = 0;
             $data['harga_jual'] = null;
-            $data['voucher_id'] = null; // Voucher only for penjualan
         }
 
         $transaction = DompetPulsaTransaction::create($data);

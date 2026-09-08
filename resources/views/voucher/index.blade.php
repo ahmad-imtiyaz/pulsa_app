@@ -20,7 +20,6 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nilai</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Modal</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok</th>
@@ -39,7 +38,6 @@
                                     <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded">{{ $voucher->kode }}</span>
                                 </td>
                                 <td class="px-6 py-4 text-gray-900">{{ $voucher->jenis }}</td>
-                                <td class="px-6 py-4 text-gray-900">Rp {{ number_format($voucher->nilai, 0, ',', '.') }}</td>
                                 <td class="px-6 py-4 text-gray-900">Rp {{ number_format($voucher->harga_modal, 0, ',', '.') }}</td>
                                 <td class="px-6 py-4 text-gray-900">Rp {{ number_format($voucher->harga_jual, 0, ',', '.') }}</td>
                                 <td class="px-6 py-4 font-medium text-gray-900">{{ $voucher->hitungStokTersedia() }}</td>

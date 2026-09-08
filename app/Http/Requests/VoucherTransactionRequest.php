@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Voucher;
 use Illuminate\Foundation\Http\FormRequest;
 
 class VoucherTransactionRequest extends FormRequest
@@ -15,7 +14,6 @@ class VoucherTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'voucher_id' => ['required', 'exists:vouchers,id'],
             'tanggal' => ['required', 'date'],
             'jumlah' => ['required', 'integer', 'min:1'],
             'harga_modal' => ['required', 'numeric', 'min:0'],
@@ -27,8 +25,6 @@ class VoucherTransactionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'voucher_id.required' => 'Voucher wajib dipilih.',
-            'voucher_id.exists' => 'Voucher tidak ditemukan.',
             'tanggal.required' => 'Tanggal wajib diisi.',
             'jumlah.required' => 'Jumlah wajib diisi.',
             'jumlah.integer' => 'Jumlah harus berupa angka bulat.',
@@ -42,7 +38,7 @@ class VoucherTransactionRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
-            $voucher = Voucher::find($this->voucher_id);
+            $voucher = $this->route('voucher');
 
             if ($voucher) {
                 $stokTersedia = $voucher->hitungStokTersedia();

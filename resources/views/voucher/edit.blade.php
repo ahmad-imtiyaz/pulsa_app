@@ -36,24 +36,13 @@
                 @enderror
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label for="nilai" class="block text-sm font-medium text-gray-700 mb-1">Nilai Voucher <span class="text-red-500">*</span></label>
-                    <input type="number" name="nilai" id="nilai" value="{{ old('nilai', $voucher->nilai) }}" required min="0" step="1000"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    @error('nilai')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="harga_modal" class="block text-sm font-medium text-gray-700 mb-1">Harga Modal <span class="text-red-500">*</span></label>
-                    <input type="number" name="harga_modal" id="harga_modal" value="{{ old('harga_modal', $voucher->harga_modal) }}" required min="0" step="100"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    @error('harga_modal')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
+            <div>
+                <label for="harga_modal" class="block text-sm font-medium text-gray-700 mb-1">Harga Modal <span class="text-red-500">*</span></label>
+                <input type="number" name="harga_modal" id="harga_modal" value="{{ old('harga_modal', $voucher->harga_modal) }}" required min="0" step="100"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                @error('harga_modal')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <div>

@@ -70,23 +70,6 @@
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="Contoh: Telkomsel, XL, Indosat, Tri, Smartfren">
                 </div>
-
-                <div>
-                    <label for="voucher_id" class="block text-sm font-medium text-gray-700 mb-1">Voucher (Opsional)</label>
-                    <select name="voucher_id" id="voucher_id"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Tidak menggunakan voucher</option>
-                        @foreach(\App\Models\Voucher::where('status', 'aktif')->where(function($q) { $q->where('tanggal_berlaku', '>=', now()->format('Y-m-d'))->orWhereNull('tanggal_berlaku'); })->get() as $voucher)
-                            <option value="{{ $voucher->id }}" {{ old('voucher_id') == $voucher->id ? 'selected' : '' }}>
-                                {{ $voucher->nama }} ({{ $voucher->kode }}) - Nilai: Rp {{ number_format($voucher->nilai, 0, ',', '.') }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('voucher_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                    <p class="mt-1 text-sm text-gray-500">Pilih voucher untuk mengurangi harga jual secara otomatis</p>
-                </div>
             </div>
 
             <div>

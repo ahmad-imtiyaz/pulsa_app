@@ -15,7 +15,6 @@ class AksesorisTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'voucher_id' => ['nullable', 'exists:vouchers,id'],
             'jenis' => ['required', Rule::in(['pembelian', 'penjualan'])],
             'tanggal' => ['required', 'date'],
             'jumlah' => ['required', 'integer', 'min:1'],

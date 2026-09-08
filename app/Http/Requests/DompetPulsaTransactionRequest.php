@@ -15,7 +15,6 @@ class DompetPulsaTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'voucher_id' => ['nullable', 'exists:vouchers,id'],
             'jenis' => ['required', Rule::in(['topup', 'penjualan'])],
             'tanggal' => ['required', 'date'],
             'nominal' => ['required', 'numeric', 'min:0'],

@@ -18,7 +18,6 @@ class Voucher extends Model
         'nama',
         'kode',
         'jenis',
-        'nilai',
         'harga_modal',
         'harga_jual',
         'stok',
@@ -28,7 +27,6 @@ class Voucher extends Model
     ];
 
     protected $casts = [
-        'nilai' => 'decimal:2',
         'harga_modal' => 'decimal:2',
         'harga_jual' => 'decimal:2',
         'stok' => 'integer',
@@ -40,42 +38,24 @@ class Voucher extends Model
         return $this->hasMany(VoucherTransaction::class, 'voucher_id');
     }
 
-    public function pulsaTransactions(): HasMany
-    {
-        return $this->hasMany(DompetPulsaTransaction::class, 'voucher_id');
-    }
-
-    public function aksesorisTransactions(): HasMany
-    {
-        return $this->hasMany(AksesorisTransaction::class, 'voucher_id');
-    }
-
     public function getTotalTerjualAttribute(): int
     {
-        return $this->transactions()->sum('jumlah')
-            + $this->pulsaTransactions()->count()
-            + $this->aksesorisTransactions()->count();
+        return $this->transactions()->sum('jumlah');
     }
 
     public function getTotalModalAttribute(): float
     {
-        return $this->transactions()->sum('total_modal')
-            + $this->pulsaTransactions()->sum('nominal')
-            + $this->aksesorisTransactions()->sum('total_modal');
+        return $this->transactions()->sum('total_modal');
     }
 
     public function getTotalPenjualanAttribute(): float
     {
-        return $this->transactions()->sum('total_penjualan')
-            + $this->pulsaTransactions()->sum('harga_jual')
-            + $this->aksesorisTransactions()->sum('total_penjualan');
+        return $this->transactions()->sum('total_penjualan');
     }
 
     public function getTotalLabaAttribute(): float
     {
-        return $this->transactions()->sum('laba')
-            + $this->pulsaTransactions()->sum('laba')
-            + $this->aksesorisTransactions()->sum('laba');
+        return $this->transactions()->sum('laba');
     }
 
     public function hitungStokTersedia(): int

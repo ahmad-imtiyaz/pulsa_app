@@ -16,7 +16,6 @@ class AksesorisTransaction extends Model
 
     protected $fillable = [
         'aksesoris_id',
-        'voucher_id',
         'jenis',
         'tanggal',
         'jumlah',
@@ -41,11 +40,6 @@ class AksesorisTransaction extends Model
     public function aksesoris(): BelongsTo
     {
         return $this->belongsTo(Aksesoris::class, 'aksesoris_id');
-    }
-
-    public function voucher(): BelongsTo
-    {
-        return $this->belongsTo(Voucher::class, 'voucher_id');
     }
 
     public function scopePembelian($query)
