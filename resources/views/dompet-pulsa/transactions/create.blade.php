@@ -10,12 +10,12 @@
 
             <div>
                 <label for="jenis" class="block text-sm font-medium text-gray-700 mb-1">Jenis Transaksi <span class="text-red-500">*</span></label>
-                <select name="jenis" id="jenis" value="{{ old('jenis') }}" required
+                <select name="jenis" id="jenis" required
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         onchange="toggleFields()">
                     <option value="">Pilih jenis transaksi</option>
-                    <option value="topup">Top Up (Penambahan Saldo)</option>
-                    <option value="penjualan">Penjualan Pulsa</option>
+                    <option value="topup" {{ old('jenis') === 'topup' ? 'selected' : '' }}>Top Up (Penambahan Saldo)</option>
+                    <option value="penjualan" {{ old('jenis') === 'penjualan' ? 'selected' : '' }}>Penjualan Pulsa</option>
                 </select>
                 @error('jenis')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
