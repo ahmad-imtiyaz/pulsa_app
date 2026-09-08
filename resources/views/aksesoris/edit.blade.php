@@ -5,7 +5,7 @@
             <a href="{{ route('aksesoris.index') }}" class="text-gray-600 hover:text-gray-900">Kembali</a>
         </div>
 
-        <form method="POST" action="{{ route('aksesoris.update', ['aksesoris' => $aksesoris->id]) }}" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
+        <form method="POST" action="{{ route('aksesoris.update', ['aksesori' => $aksesoris->id]) }}" class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
             @csrf
             @method('PUT')
 

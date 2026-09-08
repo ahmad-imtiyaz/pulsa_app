@@ -35,8 +35,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Aksesoris
     Route::resource('aksesoris', AksesorisController::class);
-    Route::get('aksesoris/{aksesoris}/transaksi/create', [AksesorisController::class, 'createTransaction'])->name('aksesoris.transaksi.create');
-    Route::post('aksesoris/{aksesoris}/transaksi', [AksesorisController::class, 'storeTransaction'])->name('aksesoris.transaksi.store');
+    Route::get('aksesoris/{aksesori}/transaksi/create', [AksesorisController::class, 'createTransaction'])->name('aksesoris.transaksi.create');
+    Route::post('aksesoris/{aksesori}/transaksi', [AksesorisController::class, 'storeTransaction'])->name('aksesoris.transaksi.store');
 
     // Pengeluaran
     Route::resource('pengeluaran', PengeluaranController::class);

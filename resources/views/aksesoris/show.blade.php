@@ -6,8 +6,8 @@
                 <p class="text-gray-500">{{ $aksesoris->kategori ?? 'Tanpa kategori' }}</p>
             </div>
             <div class="flex items-center space-x-3">
-                <a href="{{ route('aksesoris.transaksi.create', ['aksesoris' => $aksesoris->id]) }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Tambah Transaksi</a>
-                <a href="{{ route('aksesoris.edit', ['aksesoris' => $aksesoris->id]) }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Edit</a>
+                <a href="{{ route('aksesoris.transaksi.create', ['aksesori' => $aksesoris->id]) }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Tambah Transaksi</a>
+                <a href="{{ route('aksesoris.edit', ['aksesori' => $aksesoris->id]) }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Edit</a>
             </div>
         </div>
 
@@ -41,7 +41,7 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
             <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-gray-900">Riwayat Transaksi</h2>
-                <a href="{{ route('aksesoris.transaksi.create', ['aksesoris' => $aksesoris->id]) }}" class="text-sm text-blue-600 hover:text-blue-800">Tambah Transaksi</a>
+                <a href="{{ route('aksesoris.transaksi.create', ['aksesori' => $aksesoris->id]) }}" class="text-sm text-blue-600 hover:text-blue-800">Tambah Transaksi</a>
             </div>
             
             @if ($transactions->isEmpty())
