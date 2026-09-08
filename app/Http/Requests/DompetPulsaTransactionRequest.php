@@ -15,7 +15,6 @@ class DompetPulsaTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'dompet_pulsa_id' => ['required', 'exists:dompet_pulsa,id'],
             'voucher_id' => ['nullable', 'exists:vouchers,id'],
             'jenis' => ['required', Rule::in(['topup', 'penjualan'])],
             'tanggal' => ['required', 'date'],
@@ -30,8 +29,6 @@ class DompetPulsaTransactionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'dompet_pulsa_id.required' => 'Dompet pulsa wajib dipilih.',
-            'dompet_pulsa_id.exists' => 'Dompet pulsa tidak ditemukan.',
             'jenis.required' => 'Jenis transaksi wajib dipilih.',
             'jenis.in' => 'Jenis transaksi tidak valid.',
             'tanggal.required' => 'Tanggal wajib diisi.',

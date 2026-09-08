@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Aksesoris;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,7 +15,6 @@ class AksesorisTransactionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'aksesoris_id' => ['required', 'exists:aksesoris,id'],
             'voucher_id' => ['nullable', 'exists:vouchers,id'],
             'jenis' => ['required', Rule::in(['pembelian', 'penjualan'])],
             'tanggal' => ['required', 'date'],
@@ -30,8 +28,6 @@ class AksesorisTransactionRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'aksesoris_id.required' => 'Aksesoris wajib dipilih.',
-            'aksesoris_id.exists' => 'Aksesoris tidak ditemukan.',
             'jenis.required' => 'Jenis transaksi wajib dipilih.',
             'jenis.in' => 'Jenis transaksi tidak valid.',
             'tanggal.required' => 'Tanggal wajib diisi.',
@@ -58,7 +54,7 @@ class AksesorisTransactionRequest extends FormRequest
                 }
             }
 
-            $aksesoris = Aksesoris::find($this->aksesoris_id);
+            $aksesoris = $this->route('aksesoris');
             if ($aksesoris && $this->jenis === 'penjualan') {
                 $stokTersedia = $aksesoris->hitungStokTersedia();
                 if ($this->jumlah > $stokTersedia) {
