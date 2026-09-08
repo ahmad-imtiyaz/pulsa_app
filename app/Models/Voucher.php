@@ -40,24 +40,42 @@ class Voucher extends Model
         return $this->hasMany(VoucherTransaction::class, 'voucher_id');
     }
 
+    public function pulsaTransactions(): HasMany
+    {
+        return $this->hasMany(DompetPulsaTransaction::class, 'voucher_id');
+    }
+
+    public function aksesorisTransactions(): HasMany
+    {
+        return $this->hasMany(AksesorisTransaction::class, 'voucher_id');
+    }
+
     public function getTotalTerjualAttribute(): int
     {
-        return $this->transactions()->sum('jumlah');
+        return $this->transactions()->sum('jumlah')
+            + $this->pulsaTransactions()->count()
+            + $this->aksesorisTransactions()->count();
     }
 
     public function getTotalModalAttribute(): float
     {
-        return $this->transactions()->sum('total_modal');
+        return $this->transactions()->sum('total_modal')
+            + $this->pulsaTransactions()->sum('nominal')
+            + $this->aksesorisTransactions()->sum('total_modal');
     }
 
     public function getTotalPenjualanAttribute(): float
     {
-        return $this->transactions()->sum('total_penjualan');
+        return $this->transactions()->sum('total_penjualan')
+            + $this->pulsaTransactions()->sum('harga_jual')
+            + $this->aksesorisTransactions()->sum('total_penjualan');
     }
 
     public function getTotalLabaAttribute(): float
     {
-        return $this->transactions()->sum('laba');
+        return $this->transactions()->sum('laba')
+            + $this->pulsaTransactions()->sum('laba')
+            + $this->aksesorisTransactions()->sum('laba');
     }
 
     public function hitungStokTersedia(): int

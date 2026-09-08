@@ -17,6 +17,7 @@ class AksesorisTransactionRequest extends FormRequest
     {
         return [
             'aksesoris_id' => ['required', 'exists:aksesoris,id'],
+            'voucher_id' => ['nullable', 'exists:vouchers,id'],
             'jenis' => ['required', Rule::in(['pembelian', 'penjualan'])],
             'tanggal' => ['required', 'date'],
             'jumlah' => ['required', 'integer', 'min:1'],

@@ -16,6 +16,7 @@ class DompetPulsaTransaction extends Model
 
     protected $fillable = [
         'dompet_pulsa_id',
+        'voucher_id',
         'jenis',
         'tanggal',
         'nominal',
@@ -36,6 +37,11 @@ class DompetPulsaTransaction extends Model
     public function dompetPulsa(): BelongsTo
     {
         return $this->belongsTo(DompetPulsa::class, 'dompet_pulsa_id');
+    }
+
+    public function voucher(): BelongsTo
+    {
+        return $this->belongsTo(Voucher::class, 'voucher_id');
     }
 
     public function scopeTopup($query)
