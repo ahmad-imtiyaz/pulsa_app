@@ -18,6 +18,7 @@ class DompetPulsa extends Model
         'nama',
         'kode',
         'saldo_awal',
+        'sisa_saldo_awal',
         'saldo_tersedia',
         'is_active',
         'keterangan',
@@ -77,6 +78,6 @@ class DompetPulsa extends Model
 
     public function getSisaSaldoAwalAttribute($value)
     {
-        return $value ?? $this->sisa_saldo_awal ?? $this->saldo_awal;
+        return $value ?? $this->saldo_awal;
     }
 }
