@@ -62,7 +62,25 @@ class DompetPulsaController extends Controller
         $labaHariIni = $dompetPulsa->penjualanTransactions()->where('tanggal', Carbon::today())->sum('laba');
         $saldoAkhir = $saldoAwal + $topupHariIni - $penjualanHariIni;
 
-        return view('dompet-pulsa.show', compact('dompetPulsa', 'transactions', 'saldoAwal', 'topupHariIni', 'penjualanHariIni', 'labaHariIni', 'saldoAkhir'));
+        // Client requested logic
+        $modalAwal = $dompetPulsa->saldo_awal;
+        $selisih = $modalAwal - $penjualanHariIni;
+        $sisaSaldoSaatIni = $dompetPulsa->hitungSaldoTersedia();
+        $labaRugi = $sisaSaldoSaatIni - $selisih;
+
+        return view('dompet-pulsa.show', compact(
+            'dompetPulsa',
+            'transactions',
+            'saldoAwal',
+            'topupHariIni',
+            'penjualanHariIni',
+            'labaHariIni',
+            'saldoAkhir',
+            'modalAwal',
+            'selisih',
+            'sisaSaldoSaatIni',
+            'labaRugi'
+        ));
     }
 
     public function edit(DompetPulsa $dompetPulsa)

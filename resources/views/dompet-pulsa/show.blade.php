@@ -15,7 +15,31 @@
         <!-- Summary Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <p class="text-sm text-gray-500">Saldo Awal</p>
+                <p class="text-sm text-gray-500">Modal Awal</p>
+                <p class="text-2xl font-bold text-gray-900 mt-1">Rp {{ number_format($modalAwal, 0, ',', '.') }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <p class="text-sm text-gray-500">Penjualan Hari Ini</p>
+                <p class="text-2xl font-bold text-red-600 mt-1">Rp {{ number_format($penjualanHariIni, 0, ',', '.') }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <p class="text-sm text-gray-500">Selisih</p>
+                <p class="text-2xl font-bold {{ $selisih >= 0 ? 'text-blue-600' : 'text-red-600' }} mt-1">Rp {{ number_format($selisih, 0, ',', '.') }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <p class="text-sm text-gray-500">Sisa Saldo Saat Ini</p>
+                <p class="text-2xl font-bold text-gray-900 mt-1">Rp {{ number_format($sisaSaldoSaatIni, 0, ',', '.') }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <p class="text-sm text-gray-500">Laba / Rugi</p>
+                <p class="text-2xl font-bold {{ $labaRugi >= 0 ? 'text-green-600' : 'text-red-600' }} mt-1">Rp {{ number_format($labaRugi, 0, ',', '.') }}</p>
+            </div>
+        </div>
+
+        <!-- Additional Info Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <p class="text-sm text-gray-500">Saldo Awal (Hari Ini)</p>
                 <p class="text-2xl font-bold text-gray-900 mt-1">Rp {{ number_format($saldoAwal, 0, ',', '.') }}</p>
             </div>
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -23,16 +47,8 @@
                 <p class="text-2xl font-bold text-green-600 mt-1">Rp {{ number_format($topupHariIni, 0, ',', '.') }}</p>
             </div>
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <p class="text-sm text-gray-500">Penjualan Hari Ini</p>
-                <p class="text-2xl font-bold text-red-600 mt-1">Rp {{ number_format($penjualanHariIni, 0, ',', '.') }}</p>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <p class="text-sm text-gray-500">Laba Hari Ini</p>
+                <p class="text-sm text-gray-500">Laba Hari Ini (Markup)</p>
                 <p class="text-2xl font-bold text-green-600 mt-1">Rp {{ number_format($labaHariIni, 0, ',', '.') }}</p>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <p class="text-sm text-gray-500">Saldo Akhir</p>
-                <p class="text-2xl font-bold text-gray-900 mt-1">Rp {{ number_format($saldoAkhir, 0, ',', '.') }}</p>
             </div>
         </div>
 
