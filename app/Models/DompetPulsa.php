@@ -25,6 +25,7 @@ class DompetPulsa extends Model
 
     protected $casts = [
         'saldo_awal' => 'decimal:2',
+        'sisa_saldo_awal' => 'decimal:2',  // NEW: Sisa Saldo Saat Ini - input manual di awal
         'saldo_tersedia' => 'decimal:2',
         'is_active' => 'boolean',
     ];
@@ -72,5 +73,10 @@ class DompetPulsa extends Model
     public function hitungLaba(): float
     {
         return $this->total_penjualan_jual - $this->total_penjualan_modal;
+    }
+
+    public function getSisaSaldoAwalAttribute($value)
+    {
+        return $value ?? $this->sisa_saldo_awal ?? $this->saldo_awal;
     }
 }
