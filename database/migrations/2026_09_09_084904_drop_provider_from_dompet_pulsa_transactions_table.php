@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Voucher;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('dompet_pulsa_transactions', function (Blueprint $table) {
-            $table->foreignId('voucher_id')->nullable()->constrained('vouchers')->nullOnDelete()->after('harga_jual');
+            $table->dropColumn('provider');
         });
     }
 
@@ -23,8 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('dompet_pulsa_transactions', function (Blueprint $table) {
-            $table->dropForeignIdFor(Voucher::class);
-            $table->dropColumn('voucher_id');
+            $table->string('provider')->nullable();
         });
     }
 };

@@ -121,4 +121,39 @@ class DompetPulsaController extends Controller
         return redirect()->route('dompet-pulsa.show', $dompetPulsa)
             ->with('success', 'Transaksi berhasil ditambahkan.');
     }
+
+    public function editTransaction(DompetPulsa $dompetPulsa, DompetPulsaTransaction $transaksi)
+    {
+        return view('dompet-pulsa.transactions.edit', compact('dompetPulsa', 'transaksi'));
+    }
+
+    public function updateTransaction(DompetPulsaTransactionRequest $request, DompetPulsa $dompetPulsa, DompetPulsaTransaction $transaksi)
+    {
+        $data = $request->validated();
+
+        if ($data['jenis'] === 'penjualan') {
+            $data['laba'] = $data['harga_jual'] - $data['nominal'];
+        } else {
+            $data['laba'] = 0;
+            $data['harga_jual'] = null;
+        }
+
+        $transaksi->update($data);
+
+        $this->summaryService->recalculateForDate(Carbon::parse($data['tanggal']));
+
+        return redirect()->route('dompet-pulsa.show', $dompetPulsa)
+            ->with('success', 'Transaksi berhasil diperbarui.');
+    }
+
+    public function destroyTransaction(DompetPulsa $dompetPulsa, DompetPulsaTransaction $transaksi)
+    {
+        $tanggal = $transaksi->tanggal;
+        $transaksi->delete();
+
+        $this->summaryService->recalculateForDate(Carbon::parse($tanggal));
+
+        return redirect()->route('dompet-pulsa.show', $dompetPulsa)
+            ->with('success', 'Transaksi berhasil dihapus.');
+    }
 }

@@ -27,6 +27,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ]);
     Route::get('dompet-pulsa/{dompetPulsa}/transaksi/create', [DompetPulsaController::class, 'createTransaction'])->name('dompet-pulsa.transaksi.create');
     Route::post('dompet-pulsa/{dompetPulsa}/transaksi', [DompetPulsaController::class, 'storeTransaction'])->name('dompet-pulsa.transaksi.store');
+    Route::get('dompet-pulsa/{dompetPulsa}/transaksi/{transaksi}/edit', [DompetPulsaController::class, 'editTransaction'])->name('dompet-pulsa.transaksi.edit');
+    Route::put('dompet-pulsa/{dompetPulsa}/transaksi/{transaksi}', [DompetPulsaController::class, 'updateTransaction'])->name('dompet-pulsa.transaksi.update');
+    Route::delete('dompet-pulsa/{dompetPulsa}/transaksi/{transaksi}', [DompetPulsaController::class, 'destroyTransaction'])->name('dompet-pulsa.transaksi.destroy');
 
     // Voucher
     Route::resource('voucher', VoucherController::class);
@@ -34,9 +37,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('voucher/{voucher}/transaksi', [VoucherController::class, 'storeTransaction'])->name('voucher.transaksi.store');
 
     // Aksesoris
-   Route::resource('aksesoris', AksesorisController::class)->parameters([
-    'aksesoris' => 'aksesoris',
-]);
+    Route::resource('aksesoris', AksesorisController::class)->parameters([
+        'aksesoris' => 'aksesoris',
+    ]);
     Route::get('aksesoris/{aksesoris}/transaksi/create', [AksesorisController::class, 'createTransaction'])->name('aksesoris.transaksi.create');
     Route::post('aksesoris/{aksesoris}/transaksi', [AksesorisController::class, 'storeTransaction'])->name('aksesoris.transaksi.store');
 

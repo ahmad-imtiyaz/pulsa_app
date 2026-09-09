@@ -43,7 +43,6 @@
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dompet</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modal</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laba</th>
@@ -54,7 +53,6 @@
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $tx->tanggal->format('d/m/Y') }}</td>
                                     <td class="px-6 py-4 font-medium text-gray-900">{{ $tx->dompetPulsa->nama }}</td>
-                                    <td class="px-6 py-4 text-gray-900">{{ $tx->provider ?? '-' }}</td>
                                     <td class="px-6 py-4 text-gray-900">Rp {{ number_format($tx->nominal, 0, ',', '.') }}</td>
                                     <td class="px-6 py-4 text-gray-900">Rp {{ number_format($tx->harga_jual, 0, ',', '.') }}</td>
                                     <td class="px-6 py-4 font-medium text-green-600">Rp {{ number_format($tx->laba, 0, ',', '.') }}</td>

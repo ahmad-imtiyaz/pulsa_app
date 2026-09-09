@@ -21,7 +21,6 @@ class DompetPulsaTransaction extends Model
         'nominal',
         'harga_jual',
         'laba',
-        'provider',
         'keterangan',
     ];
 

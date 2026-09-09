@@ -19,7 +19,6 @@ class DompetPulsaTransactionRequest extends FormRequest
             'tanggal' => ['required', 'date'],
             'nominal' => ['required', 'numeric', 'min:0'],
             'harga_jual' => ['nullable', 'numeric', 'min:0'],
-            'provider' => ['nullable', 'string', 'max:100'],
             'keterangan' => ['nullable', 'string'],
         ];
     }
