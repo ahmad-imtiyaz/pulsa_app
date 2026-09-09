@@ -58,7 +58,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nominal (Modal)</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laba</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nomor HP / Provider</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterangan</th>
                             </tr>
                         </thead>
@@ -82,14 +82,7 @@
                                     <td class="px-6 py-4 font-medium {{ $tx->laba > 0 ? 'text-green-600' : 'text-gray-900' }}">
                                         Rp {{ number_format($tx->laba, 0, ',', '.') }}
                                     </td>
-                                    <td class="px-6 py-4 text-gray-500">
-                                        @if ($tx->nomor_hp)
-                                            {{ $tx->nomor_hp }}<br>
-                                            <span class="text-xs">{{ $tx->provider }}</span>
-                                        @else
-                                            <span class="text-gray-400">-</span>
-                                        @endif
-                                    </td>
+                                    <td class="px-6 py-4 text-gray-500">{{ $tx->provider ?? '-' }}</td>
                                     <td class="px-6 py-4 text-gray-500">{{ $tx->keterangan ?? '-' }}</td>
                                 </tr>
                             @endforeach

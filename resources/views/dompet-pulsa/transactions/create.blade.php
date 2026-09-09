@@ -55,16 +55,6 @@
                 </div>
 
                 <div>
-                    <label for="nomor_hp" class="block text-sm font-medium text-gray-700 mb-1">Nomor HP <span class="text-red-500">*</span></label>
-                    <input type="text" name="nomor_hp" id="nomor_hp" value="{{ old('nomor_hp') }}"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                           placeholder="Contoh: 081234567890">
-                    @error('nomor_hp')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
                     <label for="provider" class="block text-sm font-medium text-gray-700 mb-1">Provider</label>
                     <input type="text" name="provider" id="provider" value="{{ old('provider') }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -96,18 +86,14 @@
             const jenis = document.getElementById('jenis').value;
             const penjualanFields = document.getElementById('penjualan-fields');
             const hargaJual = document.getElementById('harga_jual');
-            const nomorHp = document.getElementById('nomor_hp');
             
             if (jenis === 'penjualan') {
                 penjualanFields.classList.remove('hidden');
                 hargaJual.required = true;
-                nomorHp.required = true;
             } else {
                 penjualanFields.classList.add('hidden');
                 hargaJual.required = false;
-                nomorHp.required = false;
                 hargaJual.value = '';
-                nomorHp.value = '';
             }
         }
     </script>

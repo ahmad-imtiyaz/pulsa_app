@@ -19,7 +19,6 @@ class DompetPulsaTransactionRequest extends FormRequest
             'tanggal' => ['required', 'date'],
             'nominal' => ['required', 'numeric', 'min:0'],
             'harga_jual' => ['nullable', 'numeric', 'min:0'],
-            'nomor_hp' => ['nullable', 'string', 'max:20'],
             'provider' => ['nullable', 'string', 'max:100'],
             'keterangan' => ['nullable', 'string'],
         ];
@@ -45,9 +44,6 @@ class DompetPulsaTransactionRequest extends FormRequest
                     $validator->errors()->add('harga_jual', 'Harga jual wajib diisi untuk transaksi penjualan.');
                 } elseif ($this->harga_jual < $this->nominal) {
                     $validator->errors()->add('harga_jual', 'Harga jual tidak boleh lebih kecil dari harga modal.');
-                }
-                if (empty($this->nomor_hp)) {
-                    $validator->errors()->add('nomor_hp', 'Nomor HP wajib diisi untuk transaksi penjualan.');
                 }
             }
 
