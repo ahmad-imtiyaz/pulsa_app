@@ -30,7 +30,7 @@
 
             <div>
                 <label for="saldo_awal" class="block text-sm font-medium text-gray-700 mb-1">Saldo Awal <span class="text-red-500">*</span></label>
-                <input type="number" name="saldo_awal" id="saldo_awal" value="{{ old('saldo_awal') }}" required min="0" step="1000"
+                <input type="number" name="saldo_awal" id="saldo_awal" value="{{ old('saldo_awal') }}" required min="0" step="any"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                        placeholder="Contoh: 1000000">
                 @error('saldo_awal')

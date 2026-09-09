@@ -38,7 +38,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label for="harga_modal" class="block text-sm font-medium text-gray-700 mb-1">Harga Modal <span class="text-red-500">*</span></label>
-                    <input type="number" name="harga_modal" id="harga_modal" value="{{ old('harga_modal') }}" required min="0" step="100"
+                    <input type="number" name="harga_modal" id="harga_modal" value="{{ old('harga_modal') }}" required min="0" step="any"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="Contoh: 20000">
                     @error('harga_modal')
@@ -48,7 +48,7 @@
 
                 <div>
                     <label for="harga_jual" class="block text-sm font-medium text-gray-700 mb-1">Harga Jual <span class="text-red-500">*</span></label>
-                    <input type="number" name="harga_jual" id="harga_jual" value="{{ old('harga_jual') }}" required min="0" step="100"
+                    <input type="number" name="harga_jual" id="harga_jual" value="{{ old('harga_jual') }}" required min="0" step="any"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="Contoh: 30000">
                     @error('harga_jual')
