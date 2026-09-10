@@ -156,11 +156,8 @@ class DailySummaryService
 
     public function getDashboardData(Carbon $date): array
     {
-        $summary = DailySummary::where('tanggal', $date->toDateString())->first();
-
-        if (! $summary) {
-            $summary = $this->recalculateForDate($date);
-        }
+        // Always recalculate for the requested date to ensure fresh data
+        $summary = $this->recalculateForDate($date);
 
         $dompets = DompetPulsa::where('is_active', true)->get()->map(function ($dompet) use ($date) {
             $saldoAwal = $this->getSaldoAwalDompet($dompet, $date);
