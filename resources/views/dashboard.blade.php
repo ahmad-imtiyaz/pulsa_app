@@ -85,6 +85,7 @@
                                         <p class="text-sm text-gray-500">Saldo: Rp {{ number_format($dompet['saldo_akhir'], 0, ',', '.') }}</p>
                                     </div>
                                     <div class="text-right">
+                                        <p class="text-sm font-medium {{ $dompet['laba'] >= 0 ? 'text-green-600' : 'text-red-600' }}">Laba/Rugi: Rp {{ number_format($dompet['laba'], 0, ',', '.') }}</p>
                                         <p class="text-xs text-gray-500">Penjualan: Rp {{ number_format($dompet['penjualan'], 0, ',', '.') }}</p>
                                     </div>
                                 </div>

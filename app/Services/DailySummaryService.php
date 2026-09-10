@@ -58,6 +58,7 @@ class DailySummaryService
         $totalSaldoAwal = 0;
         $totalTopup = 0;
         $totalPenjualan = 0;
+        $totalLabaRugi = 0;
 
         foreach ($dompets as $dompet) {
             // Saldo awal hari ini = saldo akhir kemarin
@@ -71,19 +72,26 @@ class DailySummaryService
             $totalTopup += $topup;
 
             // Penjualan hari ini (nominal = penjualan hari ini)
-            $penjualan = $dompet->penjualanTransactions()
-                ->whereDate('tanggal', $date);
+            $penjualanHariIni = $dompet->penjualanTransactions()
+                ->whereDate('tanggal', $date)
+                ->sum('nominal');
+            $totalPenjualan += $penjualanHariIni;
 
-            $totalPenjualan += $penjualan->sum('nominal');
+            // Laba/Rugi at wallet level (per dompet)
+            // Selisih = Modal Awal - Penjualan Hari Ini
+            $modalAwal = $dompet->saldo_awal;
+            $selisih = $modalAwal - $penjualanHariIni;
+            // Laba/Rugi = Sisa Saldo Saat Ini - Selisih
+            $sisaSaldoSaatIni = $dompet->sisa_saldo_awal ?? $dompet->saldo_awal;
+            $labaRugi = $sisaSaldoSaatIni - $selisih;
+            $totalLabaRugi += $labaRugi;
         }
 
         $summary->pulsa_saldo_awal = $totalSaldoAwal;
         $summary->pulsa_topup = $totalTopup;
         $summary->pulsa_penjualan = $totalPenjualan;
         $summary->pulsa_saldo_akhir = $totalSaldoAwal + $totalTopup - $totalPenjualan;
-        // pulsa_laba is no longer calculated from harga_jual - nominal
-        // It will be calculated at wallet level in DompetPulsaController@show
-        $summary->pulsa_laba = 0;
+        $summary->pulsa_laba = $totalLabaRugi;
     }
 
     public function getSaldoAwalDompet(DompetPulsa $dompet, Carbon $date): float
@@ -159,6 +167,12 @@ class DailySummaryService
             $topup = $dompet->topupTransactions()->whereDate('tanggal', $date)->sum('nominal');
             $penjualan = $dompet->penjualanTransactions()->whereDate('tanggal', $date)->sum('nominal');
 
+            // Laba/Rugi at wallet level (per dompet)
+            $modalAwal = $dompet->saldo_awal;
+            $selisih = $modalAwal - $penjualan;
+            $sisaSaldoSaatIni = $dompet->sisa_saldo_awal ?? $dompet->saldo_awal;
+            $labaRugi = $sisaSaldoSaatIni - $selisih;
+
             return [
                 'id' => $dompet->id,
                 'nama' => $dompet->nama,
@@ -167,7 +181,7 @@ class DailySummaryService
                 'topup' => $topup,
                 'penjualan' => $penjualan,
                 'saldo_akhir' => $saldoAwal + $topup - $penjualan,
-                'laba' => 0, // Laba calculated at wallet level
+                'laba' => $labaRugi,
             ];
         });
 
