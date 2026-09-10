@@ -19,16 +19,12 @@ class DompetPulsaTransaction extends Model
         'jenis',
         'tanggal',
         'nominal',
-        'harga_jual',
-        'laba',
         'keterangan',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
         'nominal' => 'decimal:2',
-        'harga_jual' => 'decimal:2',
-        'laba' => 'decimal:2',
     ];
 
     public function dompetPulsa(): BelongsTo

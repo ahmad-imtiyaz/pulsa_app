@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('dompet_pulsa_transactions', function (Blueprint $table) {
-            $table->dropColumn('nomor_hp');
+            $table->dropColumn(['harga_jual', 'laba']);
         });
     }
 
@@ -22,7 +22,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('dompet_pulsa_transactions', function (Blueprint $table) {
-            $table->string('nomor_hp')->nullable();
+            $table->decimal('harga_jual', 15, 2)->nullable()->after('nominal');
+            $table->decimal('laba', 15, 2)->default(0)->after('harga_jual');
         });
     }
 };

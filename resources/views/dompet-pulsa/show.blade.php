@@ -37,7 +37,7 @@
         </div>
 
         <!-- Additional Info Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <p class="text-sm text-gray-500">Saldo Awal (Hari Ini)</p>
                 <p class="text-2xl font-bold text-gray-900 mt-1">Rp {{ number_format($saldoAwal, 0, ',', '.') }}</p>
@@ -45,10 +45,6 @@
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <p class="text-sm text-gray-500">Topup Hari Ini</p>
                 <p class="text-2xl font-bold text-green-600 mt-1">Rp {{ number_format($topupHariIni, 0, ',', '.') }}</p>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <p class="text-sm text-gray-500">Laba Hari Ini (Markup)</p>
-                <p class="text-2xl font-bold text-green-600 mt-1">Rp {{ number_format($labaHariIni, 0, ',', '.') }}</p>
             </div>
         </div>
 
@@ -71,9 +67,7 @@
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nominal (Modal)</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laba</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nominal</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterangan</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                             </tr>
@@ -88,16 +82,6 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-gray-900">Rp {{ number_format($tx->nominal, 0, ',', '.') }}</td>
-                                    <td class="px-6 py-4 text-gray-900">
-                                        @if ($tx->harga_jual)
-                                            Rp {{ number_format($tx->harga_jual, 0, ',', '.') }}
-                                        @else
-                                            <span class="text-gray-400">-</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4 font-medium {{ $tx->laba > 0 ? 'text-green-600' : 'text-gray-900' }}">
-                                        Rp {{ number_format($tx->laba, 0, ',', '.') }}
-                                    </td>
                                     <td class="px-6 py-4 text-gray-500">{{ $tx->keterangan ?? '-' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center space-x-2">

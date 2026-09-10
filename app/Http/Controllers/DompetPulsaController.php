@@ -60,7 +60,6 @@ class DompetPulsaController extends Controller
         $saldoAwal = $this->summaryService->getSaldoAwalDompet($dompetPulsa, Carbon::today());
         $topupHariIni = $dompetPulsa->topupTransactions()->where('tanggal', Carbon::today())->sum('nominal');
         $penjualanHariIni = $dompetPulsa->penjualanTransactions()->where('tanggal', Carbon::today())->sum('nominal');
-        $labaHariIni = $dompetPulsa->penjualanTransactions()->where('tanggal', Carbon::today())->sum('laba');
         $saldoAkhir = $saldoAwal + $topupHariIni - $penjualanHariIni;
 
         // Client requested logic
@@ -76,7 +75,6 @@ class DompetPulsaController extends Controller
             'saldoAwal',
             'topupHariIni',
             'penjualanHariIni',
-            'labaHariIni',
             'saldoAkhir',
             'modalAwal',
             'selisih',
@@ -127,12 +125,8 @@ class DompetPulsaController extends Controller
         $data = $request->validated();
         $data['dompet_pulsa_id'] = $dompetPulsa->id;
 
-        if ($data['jenis'] === 'penjualan') {
-            $data['laba'] = $data['harga_jual'] - $data['nominal'];
-        } else {
-            $data['laba'] = 0;
-            $data['harga_jual'] = null;
-        }
+        // nominal is used for both topup (jumlah topup) and penjualan (penjualan hari ini)
+        // No harga_jual or laba calculation needed
 
         $transaction = DompetPulsaTransaction::create($data);
 
@@ -151,12 +145,8 @@ class DompetPulsaController extends Controller
     {
         $data = $request->validated();
 
-        if ($data['jenis'] === 'penjualan') {
-            $data['laba'] = $data['harga_jual'] - $data['nominal'];
-        } else {
-            $data['laba'] = 0;
-            $data['harga_jual'] = null;
-        }
+        // nominal is used for both topup (jumlah topup) and penjualan (penjualan hari ini)
+        // No harga_jual or laba calculation needed
 
         $transaksi->update($data);
 

@@ -127,9 +127,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Transaksi</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Penjualan Modal</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Penjualan Jual</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laba</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Penjualan</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -138,9 +136,7 @@
                                     <td class="px-6 py-4 font-medium text-gray-900">{{ $dompet['nama'] }}</td>
                                     <td class="px-6 py-4 text-gray-900">{{ $dompet['kode'] }}</td>
                                     <td class="px-6 py-4 text-gray-900">{{ $dompet['transaksi_count'] }}</td>
-                                    <td class="px-6 py-4 text-gray-900">Rp {{ number_format($dompet['total_penjualan_modal'], 0, ',', '.') }}</td>
-                                    <td class="px-6 py-4 text-gray-900">Rp {{ number_format($dompet['total_penjualan_jual'], 0, ',', '.') }}</td>
-                                    <td class="px-6 py-4 font-medium text-green-600">Rp {{ number_format($dompet['total_laba'], 0, ',', '.') }}</td>
+                                    <td class="px-6 py-4 text-gray-900">Rp {{ number_format($dompet['total_penjualan'], 0, ',', '.') }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

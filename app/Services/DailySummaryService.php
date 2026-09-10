@@ -57,8 +57,7 @@ class DailySummaryService
 
         $totalSaldoAwal = 0;
         $totalTopup = 0;
-        $totalPenjualanModal = 0;
-        $totalPenjualanJual = 0;
+        $totalPenjualan = 0;
 
         foreach ($dompets as $dompet) {
             // Saldo awal hari ini = saldo akhir kemarin
@@ -71,20 +70,20 @@ class DailySummaryService
                 ->sum('nominal');
             $totalTopup += $topup;
 
-            // Penjualan hari ini
+            // Penjualan hari ini (nominal = penjualan hari ini)
             $penjualan = $dompet->penjualanTransactions()
                 ->whereDate('tanggal', $date);
 
-            $totalPenjualanModal += $penjualan->sum('nominal');
-            $totalPenjualanJual += $penjualan->sum('harga_jual');
+            $totalPenjualan += $penjualan->sum('nominal');
         }
 
         $summary->pulsa_saldo_awal = $totalSaldoAwal;
         $summary->pulsa_topup = $totalTopup;
-        $summary->pulsa_penjualan_modal = $totalPenjualanModal;
-        $summary->pulsa_penjualan_jual = $totalPenjualanJual;
-        $summary->pulsa_saldo_akhir = $totalSaldoAwal + $totalTopup - $totalPenjualanModal;
-        $summary->pulsa_laba = $totalPenjualanJual - $totalPenjualanModal;
+        $summary->pulsa_penjualan = $totalPenjualan;
+        $summary->pulsa_saldo_akhir = $totalSaldoAwal + $totalTopup - $totalPenjualan;
+        // pulsa_laba is no longer calculated from harga_jual - nominal
+        // It will be calculated at wallet level in DompetPulsaController@show
+        $summary->pulsa_laba = 0;
     }
 
     public function getSaldoAwalDompet(DompetPulsa $dompet, Carbon $date): float
@@ -158,8 +157,7 @@ class DailySummaryService
         $dompets = DompetPulsa::where('is_active', true)->get()->map(function ($dompet) use ($date) {
             $saldoAwal = $this->getSaldoAwalDompet($dompet, $date);
             $topup = $dompet->topupTransactions()->whereDate('tanggal', $date)->sum('nominal');
-            $penjualanModal = $dompet->penjualanTransactions()->whereDate('tanggal', $date)->sum('nominal');
-            $penjualanJual = $dompet->penjualanTransactions()->whereDate('tanggal', $date)->sum('harga_jual');
+            $penjualan = $dompet->penjualanTransactions()->whereDate('tanggal', $date)->sum('nominal');
 
             return [
                 'id' => $dompet->id,
@@ -167,10 +165,9 @@ class DailySummaryService
                 'kode' => $dompet->kode,
                 'saldo_awal' => $saldoAwal,
                 'topup' => $topup,
-                'penjualan_modal' => $penjualanModal,
-                'penjualan_jual' => $penjualanJual,
-                'saldo_akhir' => $saldoAwal + $topup - $penjualanModal,
-                'laba' => $penjualanJual - $penjualanModal,
+                'penjualan' => $penjualan,
+                'saldo_akhir' => $saldoAwal + $topup - $penjualan,
+                'laba' => 0, // Laba calculated at wallet level
             ];
         });
 

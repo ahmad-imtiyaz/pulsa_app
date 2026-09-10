@@ -51,32 +51,17 @@ class DompetPulsa extends Model
         return $this->topupTransactions()->sum('nominal');
     }
 
-    public function getTotalPenjualanModalAttribute(): float
+    public function getTotalPenjualanAttribute(): float
     {
         return $this->penjualanTransactions()->sum('nominal');
     }
 
-    public function getTotalPenjualanJualAttribute(): float
-    {
-        return $this->penjualanTransactions()->sum('harga_jual');
-    }
-
-    public function getTotalLabaAttribute(): float
-    {
-        return $this->penjualanTransactions()->sum('laba');
-    }
-
     public function hitungSaldoTersedia(): float
     {
-        return $this->saldo_awal + $this->total_topup - $this->total_penjualan_modal;
+        return $this->saldo_awal + $this->total_topup - $this->total_penjualan;
     }
 
-    public function hitungLaba(): float
-    {
-        return $this->total_penjualan_jual - $this->total_penjualan_modal;
-    }
-
-    public function getSisaSaldoAwalAttribute($value)
+    public function getSisaSaldoAwalAttribute(?float $value): float
     {
         return $value ?? $this->saldo_awal;
     }

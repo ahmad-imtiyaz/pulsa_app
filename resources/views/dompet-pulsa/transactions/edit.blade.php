@@ -33,27 +33,13 @@
             </div>
 
             <div>
-                <label for="nominal" class="block text-sm font-medium text-gray-700 mb-1">Harga Modal / Jumlah Topup <span class="text-red-500">*</span></label>
+                <label for="nominal" id="nominal-label" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Topup <span class="text-red-500">*</span></label>
                 <input type="number" name="nominal" id="nominal" value="{{ $transaksi->nominal }}" required min="0" step="any"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                        placeholder="Contoh: 50000">
                 @error('nominal')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
-            </div>
-
-            <!-- Fields for Penjualan only -->
-            <div id="penjualan-fields" class="hidden space-y-4">
-                <div>
-                    <label for="harga_jual" class="block text-sm font-medium text-gray-700 mb-1">Harga Jual <span class="text-red-500">*</span></label>
-                    <input type="number" name="harga_jual" id="harga_jual" value="{{ $transaksi->harga_jual }}" min="0" step="any"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                           placeholder="Contoh: 55000">
-                    @error('harga_jual')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                    <p class="mt-1 text-sm text-gray-500">Harga jual ke pelanggan (Laba = Harga Jual - Harga Modal)</p>
-                </div>
             </div>
 
             <div>
@@ -71,23 +57,21 @@
     </div>
 
     <script>
-        // Initialize fields on page load
+        // Initialize label on page load
         document.addEventListener('DOMContentLoaded', function() {
-            toggleFields();
+            updateNominalLabel();
         });
 
-        function toggleFields() {
+        function updateNominalLabel() {
             const jenis = document.getElementById('jenis').value;
-            const penjualanFields = document.getElementById('penjualan-fields');
-            const hargaJual = document.getElementById('harga_jual');
+            const label = document.getElementById('nominal-label');
             
             if (jenis === 'penjualan') {
-                penjualanFields.classList.remove('hidden');
-                hargaJual.required = true;
+                label.textContent = 'Penjualan Hari Ini *'; // * added via span
+                label.innerHTML = 'Penjualan Hari Ini <span class="text-red-500">*</span>';
             } else {
-                penjualanFields.classList.add('hidden');
-                hargaJual.required = false;
-                hargaJual.value = '';
+                label.textContent = 'Jumlah Topup *'; // * added via span
+                label.innerHTML = 'Jumlah Topup <span class="text-red-500">*</span>';
             }
         }
     </script>

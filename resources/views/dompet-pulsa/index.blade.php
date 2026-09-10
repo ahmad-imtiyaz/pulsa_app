@@ -23,7 +23,6 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Saldo Sekarang</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Topup</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Penjualan</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Laba</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                         </tr>
@@ -40,8 +39,7 @@
                                 <td class="px-6 py-4 text-gray-900">Rp {{ number_format($dompet->saldo_awal, 0, ',', '.') }}</td>
                                 <td class="px-6 py-4 font-medium text-gray-900">Rp {{ number_format($dompet->hitungSaldoTersedia(), 0, ',', '.') }}</td>
                                 <td class="px-6 py-4 text-green-600">Rp {{ number_format($dompet->total_topup, 0, ',', '.') }}</td>
-                                <td class="px-6 py-4 text-red-600">Rp {{ number_format($dompet->total_penjualan_modal, 0, ',', '.') }}</td>
-                                <td class="px-6 py-4 font-medium text-green-600">Rp {{ number_format($dompet->total_laba, 0, ',', '.') }}</td>
+                                <td class="px-6 py-4 text-red-600">Rp {{ number_format($dompet->total_penjualan, 0, ',', '.') }}</td>
                                 <td class="px-6 py-4">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full {{ $dompet->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                                         {{ $dompet->is_active ? 'Aktif' : 'Nonaktif' }}

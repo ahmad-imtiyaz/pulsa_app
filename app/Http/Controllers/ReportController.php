@@ -51,9 +51,7 @@ class ReportController extends Controller
                 'id' => $dompet->id,
                 'nama' => $dompet->nama,
                 'kode' => $dompet->kode,
-                'total_penjualan_modal' => $transactions->sum('nominal'),
-                'total_penjualan_jual' => $transactions->sum('harga_jual'),
-                'total_laba' => $transactions->sum('laba'),
+                'total_penjualan' => $transactions->sum('nominal'),
                 'transaksi_count' => $transactions->count(),
             ];
         });

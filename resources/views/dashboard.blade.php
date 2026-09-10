@@ -45,7 +45,7 @@
                         <div>
                             <p class="text-sm text-gray-500">Penjualan Hari Ini</p>
                             <p class="text-3xl font-bold text-gray-900 mt-1">
-                                Rp {{ number_format(($data['summary']->pulsa_penjualan_jual ?? 0) + ($data['summary']->voucher_penjualan_jual ?? 0) + ($data['summary']->aksesoris_penjualan_jual ?? 0), 0, ',', '.') }}
+                                Rp {{ number_format(($data['summary']->pulsa_penjualan ?? 0) + ($data['summary']->voucher_penjualan_jual ?? 0) + ($data['summary']->aksesoris_penjualan_jual ?? 0), 0, ',', '.') }}
                             </p>
                         </div>
                         <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -85,8 +85,7 @@
                                         <p class="text-sm text-gray-500">Saldo: Rp {{ number_format($dompet['saldo_akhir'], 0, ',', '.') }}</p>
                                     </div>
                                     <div class="text-right">
-                                        <p class="text-sm text-green-600 font-medium">Laba: Rp {{ number_format($dompet['laba'], 0, ',', '.') }}</p>
-                                        <p class="text-xs text-gray-500">Jual: Rp {{ number_format($dompet['penjualan_jual'], 0, ',', '.') }}</p>
+                                        <p class="text-xs text-gray-500">Penjualan: Rp {{ number_format($dompet['penjualan'], 0, ',', '.') }}</p>
                                     </div>
                                 </div>
                             </div>
