@@ -8,6 +8,7 @@ use App\Models\Aksesoris;
 use App\Models\AksesorisTransaction;
 use App\Services\DailySummaryService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class AksesorisController extends Controller
 {
@@ -15,9 +16,19 @@ class AksesorisController extends Controller
         protected DailySummaryService $summaryService
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $aksesoris = Aksesoris::with('transactions')->get();
+        $query = Aksesoris::with('transactions');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
+            });
+        }
+
+        $aksesoris = $query->latest()->get();
 
         return view('aksesoris.index', compact('aksesoris'));
     }

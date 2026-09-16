@@ -8,6 +8,7 @@ use App\Models\Voucher;
 use App\Models\VoucherTransaction;
 use App\Services\DailySummaryService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class VoucherController extends Controller
 {
@@ -15,9 +16,19 @@ class VoucherController extends Controller
         protected DailySummaryService $summaryService
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $vouchers = Voucher::with('transactions')->get();
+        $query = Voucher::with('transactions');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                    ->orWhere('kode', 'like', "%{$search}%");
+            });
+        }
+
+        $vouchers = $query->latest()->get();
 
         return view('voucher.index', compact('vouchers'));
     }

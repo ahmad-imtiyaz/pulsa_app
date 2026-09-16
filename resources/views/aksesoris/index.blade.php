@@ -5,12 +5,59 @@
             <a href="{{ route('aksesoris.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Tambah Aksesoris</a>
         </div>
 
+        <!-- Search Bar -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <form method="GET" action="{{ route('aksesoris.index') }}">
+                <div class="flex items-center gap-4">
+                    <div class="relative flex-1 max-w-md">
+                        <label for="search" class="sr-only">Cari aksesoris</label>
+                        <div class="relative flex items-center">
+                            <svg class="absolute left-3 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            <input
+                                type="text"
+                                name="search"
+                                id="search"
+                                value="{{ request('search') }}"
+                                placeholder="Cari Nama atau SKU aksesoris..."
+                                class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                            >
+                        </div>
+                    </div>
+                    @if (request('search'))
+                        <a href="{{ route('aksesoris.index') }}" class="px-4 py-2.5 text-gray-600 hover:text-gray-900 font-medium text-sm flex items-center gap-1">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Reset
+                        </a>
+                    @endif
+                </div>
+                <p class="mt-2 text-xs text-gray-500">Pencarian berdasarkan: Nama, SKU</p>
+            </form>
+        </div>
+
         @if ($aksesoris->isEmpty())
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                 <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada aksesoris</h3>
-                <p class="text-gray-500 mb-4">Tambahkan aksesoris pertama Anda untuk memulai</p>
-                <a href="{{ route('aksesoris.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Tambah Aksesoris</a>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">
+                    @if (request('search'))
+                        Tidak ada aksesoris ditemukan
+                    @else
+                        Belum ada aksesoris
+                    @endif
+                </h3>
+                <p class="text-gray-500 mb-4">
+                    @if (request('search'))
+                        Coba kata kunci lain atau <a href="{{ route('aksesoris.index') }}" class="text-blue-600 hover:underline">reset pencarian</a>
+                    @else
+                        Tambahkan aksesoris pertama Anda untuk memulai
+                    @endif
+                </p>
+                @if (!request('search'))
+                    <a href="{{ route('aksesoris.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Tambah Aksesoris</a>
+                @endif
             </div>
         @else
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
