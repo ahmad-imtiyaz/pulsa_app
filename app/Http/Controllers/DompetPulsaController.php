@@ -65,8 +65,8 @@ class DompetPulsaController extends Controller
         // Client requested logic
         $modalAwal = $dompetPulsa->saldo_awal;
         $selisih = $modalAwal - $penjualanHariIni;
-        // Gunakan sisa_saldo_awal (input manual di awal dompet), jadi tidak berubah dari transaksi harian
-        $sisaSaldoSaatIni = $dompetPulsa->sisa_saldo_awal ?? $dompetPulsa->saldo_awal;
+        // Sisa Saldo Saat Ini dihitung dari Modal Awal + Total Topup - Total Penjualan (mengikuti transaksi)
+        $sisaSaldoSaatIni = $dompetPulsa->hitungSaldoTersedia();
         $labaRugi = $sisaSaldoSaatIni - $selisih;
 
         return view('dompet-pulsa.show', compact(

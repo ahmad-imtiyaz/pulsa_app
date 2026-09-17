@@ -82,7 +82,7 @@ class DailySummaryService
             $modalAwal = $dompet->saldo_awal;
             $selisih = $modalAwal - $penjualanHariIni;
             // Laba/Rugi = Sisa Saldo Saat Ini - Selisih
-            $sisaSaldoSaatIni = $dompet->sisa_saldo_awal ?? $dompet->saldo_awal;
+            $sisaSaldoSaatIni = $dompet->hitungSaldoTersedia();
             $labaRugi = $sisaSaldoSaatIni - $selisih;
             $totalLabaRugi += $labaRugi;
         }
@@ -167,7 +167,7 @@ class DailySummaryService
             // Laba/Rugi at wallet level (per dompet)
             $modalAwal = $dompet->saldo_awal;
             $selisih = $modalAwal - $penjualan;
-            $sisaSaldoSaatIni = $dompet->sisa_saldo_awal ?? $dompet->saldo_awal;
+            $sisaSaldoSaatIni = $dompet->hitungSaldoTersedia();
             $labaRugi = $sisaSaldoSaatIni - $selisih;
 
             return [
