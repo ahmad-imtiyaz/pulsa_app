@@ -109,6 +109,54 @@
             @endif
         </div>
 
+        <!-- Detail Pengeluaran -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-900">Detail Pengeluaran</h2>
+                <span class="text-sm text-gray-500">Total: {{ $pengeluaran->flatten()->count() }} item</span>
+            </div>
+
+            @if ($pengeluaran->isEmpty())
+                <div class="p-12 text-center">
+                    <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    <p class="text-gray-500">Tidak ada pengeluaran pada periode ini</p>
+                </div>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterangan</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Karyawan</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            @foreach ($pengeluaran as $date => $items)
+                                @foreach ($items as $item)
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap">{{ $item->tanggal->format('d/m/Y') }}</td>
+                                        <td class="px-6 py-4">
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full 
+                                                {{ $item->kategori === 'operasional' ? 'bg-yellow-100 text-yellow-800' : 
+                                                   ($item->kategori === 'gaji' ? 'bg-purple-100 text-purple-800' : 'bg-pink-100 text-pink-800') }}">
+                                                {{ ucfirst($item->kategori === 'pribadi' ? 'Pengambilan Pribadi' : ($item->kategori === 'gaji' ? 'Gaji Karyawan' : 'Operasional')) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 font-medium text-red-600">Rp {{ number_format($item->jumlah, 0, ',', '.') }}</td>
+                                        <td class="px-6 py-4 text-gray-900">{{ $item->keterangan ?? '-' }}</td>
+                                        <td class="px-6 py-4 text-gray-900">{{ $item->karyawan_nama ?? '-' }}</td>
+                                    </tr>
+                                @endforeach
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+
         <!-- Per Dompet Pulsa -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
             <div class="px-6 py-4 border-b border-gray-200">

@@ -6,6 +6,7 @@ use App\Http\Requests\PengeluaranRequest;
 use App\Models\Pengeluaran;
 use App\Services\DailySummaryService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class PengeluaranController extends Controller
 {
@@ -13,9 +14,27 @@ class PengeluaranController extends Controller
         protected DailySummaryService $summaryService
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $pengeluaran = Pengeluaran::latest('tanggal')->paginate(20);
+        $query = Pengeluaran::latest('tanggal');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('keterangan', 'like', "%{$search}%")
+                    ->orWhere('kategori', 'like', "%{$search}%")
+                    ->orWhere('karyawan_nama', 'like', "%{$search}%");
+            });
+        }
+
+        $pengeluaran = $query->paginate(20)->withQueryString();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'html' => view('pengeluaran.partials.table', compact('pengeluaran'))->render(),
+                'pagination' => view('pengeluaran.partials.pagination', compact('pengeluaran'))->render(),
+            ]);
+        }
 
         return view('pengeluaran.index', compact('pengeluaran'));
     }

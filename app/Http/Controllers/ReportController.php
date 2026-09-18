@@ -7,6 +7,7 @@ use App\Models\AksesorisTransaction;
 use App\Models\DailySummary;
 use App\Models\DompetPulsa;
 use App\Models\DompetPulsaTransaction;
+use App\Models\Pengeluaran;
 use App\Models\Voucher;
 use App\Models\VoucherTransaction;
 use App\Services\DailySummaryService;
@@ -24,9 +25,24 @@ class ReportController extends Controller
         $startDate = $request->get('start_date', Carbon::today()->subDays(30)->toDateString());
         $endDate = $request->get('end_date', Carbon::today()->toDateString());
 
+        // Ensure daily summaries are calculated for the date range
+        $this->summaryService->recalculateRange(
+            Carbon::parse($startDate),
+            Carbon::parse($endDate)
+        );
+
         $summaries = DailySummary::whereBetween('tanggal', [$startDate, $endDate])
             ->orderBy('tanggal', 'desc')
             ->get();
+
+        // Get detailed pengeluaran for the date range
+        $pengeluaran = Pengeluaran::whereBetween('tanggal', [$startDate, $endDate])
+            ->orderBy('tanggal', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy(function ($item) {
+                return $item->tanggal->format('Y-m-d');
+            });
 
         // Calculate totals
         $totals = [
@@ -56,7 +72,7 @@ class ReportController extends Controller
             ];
         });
 
-        return view('reports.index', compact('summaries', 'totals', 'dompets', 'startDate', 'endDate'));
+        return view('reports.index', compact('summaries', 'totals', 'dompets', 'pengeluaran', 'startDate', 'endDate'));
     }
 
     public function penjualan(Request $request)

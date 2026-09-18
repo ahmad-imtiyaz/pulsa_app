@@ -1,5 +1,37 @@
 <x-app-layout :title="'Aksesoris'">
-    <div class="space-y-6">
+    <div
+    class="space-y-6"
+    x-data="{
+        search: @js(request('search')),
+
+        async liveSearch() {
+            const url = new URL('{{ route('aksesoris.index') }}', window.location.origin);
+
+            if (this.search.trim()) {
+                url.searchParams.set('search', this.search.trim());
+            }
+
+            const response = await fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            });
+
+            const html = await response.text();
+
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+
+            const newList = doc.querySelector('[data-aksesoris-list]');
+            const currentList = document.querySelector('[data-aksesoris-list]');
+
+            if (newList && currentList) {
+                currentList.innerHTML = newList.innerHTML;
+            }
+
+            window.history.replaceState({}, '', url);
+        }
+    }"
+>
         <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900">Aksesoris</h1>
             <a href="{{ route('aksesoris.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Tambah Aksesoris</a>
@@ -12,13 +44,14 @@
                     <div class="relative flex-1 max-w-md">
                         <label for="search" class="sr-only">Cari aksesoris</label>
                         <input
-                            type="text"
-                            name="search"
-                            id="search"
-                            value="{{ request('search') }}"
-                            placeholder="Cari Nama atau SKU aksesoris..."
-                            class="w-full pl-4 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                        >
+    type="text"
+    name="search"
+    id="search"
+    x-model="search"
+    @input.debounce.300ms="liveSearch()"
+    placeholder="Cari Nama atau SKU aksesoris..."
+    class="w-full pl-4 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+>
                     </div>
                     @if (request('search'))
                         <a href="{{ route('aksesoris.index') }}" class="px-4 py-2.5 text-gray-600 hover:text-gray-900 font-medium text-sm flex items-center gap-1">
@@ -33,7 +66,9 @@
             </form>
         </div>
 
-        @if ($aksesoris->isEmpty())
+        <div data-aksesoris-list>
+
+    @if ($aksesoris->isEmpty())
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                 <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                 <h3 class="text-lg font-medium text-gray-900 mb-2">
@@ -106,5 +141,6 @@
                 </table>
             </div>
         @endif
+    </div>
     </div>
 </x-app-layout>
