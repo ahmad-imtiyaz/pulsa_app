@@ -11,10 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('aksesoris_transactions', function (Blueprint $table) {
-            $table->dropForeign(['voucher_id']);
-            $table->dropColumn('voucher_id');
-        });
+        if (Schema::hasColumn('aksesoris_transactions', 'voucher_id')) {
+            Schema::table('aksesoris_transactions', function (Blueprint $table) {
+                $table->dropForeign(['voucher_id']);
+                $table->dropColumn('voucher_id');
+            });
+        }
     }
 
     /**

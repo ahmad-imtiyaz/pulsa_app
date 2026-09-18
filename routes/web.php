@@ -26,6 +26,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'dompet_pulsa' => 'dompetPulsa',
     ]);
     Route::get('dompet-pulsa/{dompetPulsa}/transaksi/create', [DompetPulsaController::class, 'createTransaction'])->name('dompet-pulsa.transaksi.create');
+    Route::post('dompet-pulsa/{dompetPulsa}/adjustments', [DompetPulsaController::class, 'storeAdjustment'])->name('dompet-pulsa.adjustments.store');
+    Route::delete('dompet-pulsa/{dompetPulsa}/adjustments/{adjustment}', [DompetPulsaController::class, 'destroyAdjustment'])->name('dompet-pulsa.adjustments.destroy');
+    Route::put('dompet-pulsa/{dompetPulsa}/saldo-override', [DompetPulsaController::class, 'updateSaldoOverride'])->name('dompet-pulsa.saldo-override.update');
     Route::post('dompet-pulsa/{dompetPulsa}/transaksi', [DompetPulsaController::class, 'storeTransaction'])->name('dompet-pulsa.transaksi.store');
     Route::get('dompet-pulsa/{dompetPulsa}/transaksi/{transaksi}/edit', [DompetPulsaController::class, 'editTransaction'])->name('dompet-pulsa.transaksi.edit');
     Route::put('dompet-pulsa/{dompetPulsa}/transaksi/{transaksi}', [DompetPulsaController::class, 'updateTransaction'])->name('dompet-pulsa.transaksi.update');

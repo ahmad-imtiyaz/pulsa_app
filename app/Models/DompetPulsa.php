@@ -20,14 +20,16 @@ class DompetPulsa extends Model
         'saldo_awal',
         'sisa_saldo_awal',
         'saldo_tersedia',
+        'saldo_delta',
         'is_active',
         'keterangan',
     ];
 
     protected $casts = [
         'saldo_awal' => 'decimal:2',
-        'sisa_saldo_awal' => 'decimal:2',  // NEW: Sisa Saldo Saat Ini - input manual di awal
+        'sisa_saldo_awal' => 'decimal:2',
         'saldo_tersedia' => 'decimal:2',
+        'saldo_delta' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
@@ -46,6 +48,11 @@ class DompetPulsa extends Model
         return $this->transactions()->where('jenis', 'penjualan');
     }
 
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(DompetPulsaAdjustment::class, 'dompet_pulsa_id');
+    }
+
     public function getTotalTopupAttribute(): float
     {
         return $this->topupTransactions()->sum('nominal');
@@ -59,6 +66,26 @@ class DompetPulsa extends Model
     public function hitungSaldoTersedia(): float
     {
         return $this->saldo_awal + $this->total_topup - $this->total_penjualan;
+    }
+
+    public function getAdjustmentSumAttribute(): float
+    {
+        $total = 0;
+        foreach ($this->adjustments as $adj) {
+            $total += $adj->jenis === 'tambah' ? $adj->nominal : -$adj->nominal;
+        }
+
+        return $total;
+    }
+
+    public function getSisaSaldoDisesuaikanAttribute(): float
+    {
+        return $this->hitungSaldoTersedia() + $this->adjustment_sum;
+    }
+
+    public function getSisaSaldoEfektifAttribute(): float
+    {
+        return $this->sisa_saldo_disesuaikan + ($this->saldo_delta ?? 0);
     }
 
     public function getSisaSaldoAwalAttribute(?float $value): float

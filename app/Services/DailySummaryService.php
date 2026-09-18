@@ -53,7 +53,7 @@ class DailySummaryService
 
     private function calculatePulsaSummary(DailySummary $summary, Carbon $date): void
     {
-        $dompets = DompetPulsa::where('is_active', true)->get();
+        $dompets = DompetPulsa::with('adjustments')->where('is_active', true)->get();
 
         $totalSaldoAwal = 0;
         $totalTopup = 0;
@@ -81,8 +81,8 @@ class DailySummaryService
             // Selisih = Modal Awal - Penjualan Hari Ini
             $modalAwal = $dompet->saldo_awal;
             $selisih = $modalAwal - $penjualanHariIni;
-            // Laba/Rugi = Sisa Saldo Saat Ini - Selisih
-            $sisaSaldoSaatIni = $dompet->hitungSaldoTersedia();
+            // Sisa Saldo Saat Ini menggunakan effective saldo (formula + adjustment + override)
+            $sisaSaldoSaatIni = $dompet->sisa_saldo_efektif;
             $labaRugi = $sisaSaldoSaatIni - $selisih;
             $totalLabaRugi += $labaRugi;
         }
@@ -159,7 +159,7 @@ class DailySummaryService
         // Always recalculate for the requested date to ensure fresh data
         $summary = $this->recalculateForDate($date);
 
-        $dompets = DompetPulsa::where('is_active', true)->get()->map(function ($dompet) use ($date) {
+        $dompets = DompetPulsa::with('adjustments')->where('is_active', true)->get()->map(function ($dompet) use ($date) {
             $saldoAwal = $this->getSaldoAwalDompet($dompet, $date);
             $topup = $dompet->topupTransactions()->whereDate('tanggal', $date)->sum('nominal');
             $penjualan = $dompet->penjualanTransactions()->whereDate('tanggal', $date)->sum('nominal');
@@ -167,7 +167,7 @@ class DailySummaryService
             // Laba/Rugi at wallet level (per dompet)
             $modalAwal = $dompet->saldo_awal;
             $selisih = $modalAwal - $penjualan;
-            $sisaSaldoSaatIni = $dompet->hitungSaldoTersedia();
+            $sisaSaldoSaatIni = $dompet->sisa_saldo_efektif;
             $labaRugi = $sisaSaldoSaatIni - $selisih;
 
             return [

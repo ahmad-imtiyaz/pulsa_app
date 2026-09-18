@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\DompetPulsaRequest;
 use App\Http\Requests\DompetPulsaTransactionRequest;
 use App\Models\DompetPulsa;
+use App\Models\DompetPulsaAdjustment;
 use App\Models\DompetPulsaTransaction;
 use App\Services\DailySummaryService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class DompetPulsaController extends Controller
 {
@@ -41,7 +43,6 @@ class DompetPulsaController extends Controller
             'keterangan' => $request->keterangan,
         ]);
 
-        // Recalculate daily summaries from this date onwards
         $this->summaryService->recalculateRange(
             Carbon::today()->subDays(30),
             Carbon::today()->addDays(30)
@@ -53,6 +54,7 @@ class DompetPulsaController extends Controller
 
     public function show(DompetPulsa $dompetPulsa)
     {
+        $dompetPulsa->load('adjustments');
         $transactions = $dompetPulsa->transactions()
             ->latest('tanggal')
             ->paginate(20);
@@ -62,11 +64,11 @@ class DompetPulsaController extends Controller
         $penjualanHariIni = $dompetPulsa->penjualanTransactions()->where('tanggal', Carbon::today())->sum('nominal');
         $saldoAkhir = $saldoAwal + $topupHariIni - $penjualanHariIni;
 
-        // Client requested logic
         $modalAwal = $dompetPulsa->saldo_awal;
         $selisih = $modalAwal - $penjualanHariIni;
-        // Sisa Saldo Saat Ini dihitung dari Modal Awal + Total Topup - Total Penjualan (mengikuti transaksi)
         $sisaSaldoSaatIni = $dompetPulsa->hitungSaldoTersedia();
+        $sisaSaldoDisesuaikan = $dompetPulsa->sisa_saldo_disesuaikan;
+        $sisaSaldoEfektif = $dompetPulsa->sisa_saldo_efektif;
         $labaRugi = $sisaSaldoSaatIni - $selisih;
 
         return view('dompet-pulsa.show', compact(
@@ -79,6 +81,8 @@ class DompetPulsaController extends Controller
             'modalAwal',
             'selisih',
             'sisaSaldoSaatIni',
+            'sisaSaldoDisesuaikan',
+            'sisaSaldoEfektif',
             'labaRugi'
         ));
     }
@@ -114,7 +118,40 @@ class DompetPulsaController extends Controller
             ->with('success', 'Dompet pulsa berhasil dihapus.');
     }
 
-    // Transaction methods
+    public function storeAdjustment(Request $request, DompetPulsa $dompetPulsa)
+    {
+        $request->validate([
+            'jenis' => ['required', 'in:tambah,kurang'],
+            'nominal' => ['required', 'numeric', 'min:0.01'],
+            'keterangan' => ['nullable', 'string'],
+            'tanggal' => ['required', 'date'],
+        ]);
+
+        DompetPulsaAdjustment::create([
+            'dompet_pulsa_id' => $dompetPulsa->id,
+            'jenis' => $request->jenis,
+            'nominal' => $request->nominal,
+            'keterangan' => $request->keterangan,
+            'tanggal' => $request->tanggal,
+        ]);
+
+        $this->summaryService->recalculateForDate(Carbon::parse($request->tanggal));
+
+        return redirect()->route('dompet-pulsa.show', $dompetPulsa)
+            ->with('success', 'Penyesuaian saldo berhasil disimpan.');
+    }
+
+    public function destroyAdjustment(DompetPulsa $dompetPulsa, DompetPulsaAdjustment $adjustment)
+    {
+        $tanggal = $adjustment->tanggal;
+        $adjustment->delete();
+
+        $this->summaryService->recalculateForDate(Carbon::parse($tanggal));
+
+        return redirect()->route('dompet-pulsa.show', $dompetPulsa)
+            ->with('success', 'Penyesuaian saldo berhasil dihapus.');
+    }
+
     public function createTransaction(DompetPulsa $dompetPulsa)
     {
         return view('dompet-pulsa.transactions.create', compact('dompetPulsa'));
@@ -124,9 +161,6 @@ class DompetPulsaController extends Controller
     {
         $data = $request->validated();
         $data['dompet_pulsa_id'] = $dompetPulsa->id;
-
-        // nominal is used for both topup (jumlah topup) and penjualan (penjualan hari ini)
-        // No harga_jual or laba calculation needed
 
         $transaction = DompetPulsaTransaction::create($data);
 
@@ -145,9 +179,6 @@ class DompetPulsaController extends Controller
     {
         $data = $request->validated();
 
-        // nominal is used for both topup (jumlah topup) and penjualan (penjualan hari ini)
-        // No harga_jual or laba calculation needed
-
         $transaksi->update($data);
 
         $this->summaryService->recalculateForDate(Carbon::parse($data['tanggal']));
@@ -165,5 +196,23 @@ class DompetPulsaController extends Controller
 
         return redirect()->route('dompet-pulsa.show', $dompetPulsa)
             ->with('success', 'Transaksi berhasil dihapus.');
+    }
+
+    public function updateSaldoOverride(Request $request, DompetPulsa $dompetPulsa)
+    {
+        $request->validate([
+            'saldo_delta' => 'nullable|numeric',
+        ]);
+
+        $formulaValue = $dompetPulsa->sisa_saldo_disesuaikan;
+        $inputValue = $request->saldo_delta !== '' ? $request->saldo_delta : $formulaValue;
+        $delta = $inputValue - $formulaValue;
+
+        $dompetPulsa->update([
+            'saldo_delta' => $delta,
+        ]);
+
+        return redirect()->route('dompet-pulsa.show', $dompetPulsa)
+            ->with('success', 'Sisa saldo berhasil diperbarui.');
     }
 }
