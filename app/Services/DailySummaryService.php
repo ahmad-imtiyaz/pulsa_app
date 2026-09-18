@@ -137,13 +137,19 @@ class DailySummaryService
     }
 
     private function calculatePengeluaranSummary(DailySummary $summary, Carbon $date): void
-    {
-        $pengeluaran = Pengeluaran::whereDate('tanggal', $date);
+{
+    $summary->pengeluaran_operasional = Pengeluaran::whereDate('tanggal', $date)
+        ->where('kategori', 'operasional')
+        ->sum('jumlah');
 
-        $summary->pengeluaran_operasional = $pengeluaran->where('kategori', 'operasional')->sum('jumlah');
-        $summary->pengeluaran_gaji = $pengeluaran->where('kategori', 'gaji')->sum('jumlah');
-        $summary->pengeluaran_pribadi = $pengeluaran->where('kategori', 'pribadi')->sum('jumlah');
-    }
+    $summary->pengeluaran_gaji = Pengeluaran::whereDate('tanggal', $date)
+        ->where('kategori', 'gaji')
+        ->sum('jumlah');
+
+    $summary->pengeluaran_pribadi = Pengeluaran::whereDate('tanggal', $date)
+        ->where('kategori', 'pribadi')
+        ->sum('jumlah');
+}
 
     public function recalculateRange(Carbon $startDate, Carbon $endDate): void
     {
