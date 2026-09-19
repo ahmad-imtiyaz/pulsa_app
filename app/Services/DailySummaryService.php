@@ -61,28 +61,29 @@ class DailySummaryService
         $totalLabaRugi = 0;
 
         foreach ($dompets as $dompet) {
-            // Saldo awal hari ini = saldo akhir kemarin
             $saldoAwal = $this->getSaldoAwalDompet($dompet, $date);
             $totalSaldoAwal += $saldoAwal;
 
-            // Topup hari ini
-            $topup = $dompet->topupTransactions()
-                ->whereDate('tanggal', $date)
-                ->sum('nominal');
+            $topup = $dompet->topupTransactions()->whereDate('tanggal', $date)->sum('nominal');
             $totalTopup += $topup;
 
-            // Penjualan hari ini (nominal = penjualan hari ini)
-            $penjualanHariIni = $dompet->penjualanTransactions()
-                ->whereDate('tanggal', $date)
-                ->sum('nominal');
+            $penjualanHariIni = $dompet->penjualanTransactions()->whereDate('tanggal', $date)->sum('nominal');
             $totalPenjualan += $penjualanHariIni;
 
-            // Laba/Rugi at wallet level (per dompet)
-            // Selisih = Modal Awal - Penjualan Hari Ini
             $modalAwal = $dompet->saldo_awal;
             $selisih = $modalAwal - $penjualanHariIni;
-            // Sisa Saldo Saat Ini menggunakan effective saldo (formula + adjustment + override)
-            $sisaSaldoSaatIni = $dompet->sisa_saldo_efektif;
+
+            // Adjustment hanya yang tanggalnya <= $date (bukan semua sepanjang masa)
+            $adjustmentSampaiTanggal = $dompet->adjustments
+                ->filter(fn($a) => Carbon::parse($a->tanggal)->lte($date))
+                ->sum(fn($a) => $a->jenis === 'tambah' ? $a->nominal : -$a->nominal);
+
+            // saldo_delta cuma valid untuk HARI INI — terkonfirmasi dari updateSaldoOverride()
+            // yang tidak pernah menyimpan tanggal override
+            $delta = $date->isToday() ? ($dompet->saldo_delta ?? 0) : 0;
+
+            $sisaSaldoSaatIni = $saldoAwal + $topup - $penjualanHariIni + $adjustmentSampaiTanggal + $delta;
+
             $labaRugi = $sisaSaldoSaatIni - $selisih;
             $totalLabaRugi += $labaRugi;
         }
@@ -137,19 +138,19 @@ class DailySummaryService
     }
 
     private function calculatePengeluaranSummary(DailySummary $summary, Carbon $date): void
-{
-    $summary->pengeluaran_operasional = Pengeluaran::whereDate('tanggal', $date)
-        ->where('kategori', 'operasional')
-        ->sum('jumlah');
+    {
+        $summary->pengeluaran_operasional = Pengeluaran::whereDate('tanggal', $date)
+            ->where('kategori', 'operasional')
+            ->sum('jumlah');
 
-    $summary->pengeluaran_gaji = Pengeluaran::whereDate('tanggal', $date)
-        ->where('kategori', 'gaji')
-        ->sum('jumlah');
+        $summary->pengeluaran_gaji = Pengeluaran::whereDate('tanggal', $date)
+            ->where('kategori', 'gaji')
+            ->sum('jumlah');
 
-    $summary->pengeluaran_pribadi = Pengeluaran::whereDate('tanggal', $date)
-        ->where('kategori', 'pribadi')
-        ->sum('jumlah');
-}
+        $summary->pengeluaran_pribadi = Pengeluaran::whereDate('tanggal', $date)
+            ->where('kategori', 'pribadi')
+            ->sum('jumlah');
+    }
 
     public function recalculateRange(Carbon $startDate, Carbon $endDate): void
     {

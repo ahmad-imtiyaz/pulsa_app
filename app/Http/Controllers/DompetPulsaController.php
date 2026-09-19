@@ -66,9 +66,14 @@ class DompetPulsaController extends Controller
 
         $modalAwal = $dompetPulsa->saldo_awal;
         $selisih = $modalAwal - $penjualanHariIni;
-        $sisaSaldoSaatIni = $dompetPulsa->hitungSaldoTersedia();
+
+        // --- REVISI DI SINI ---
+        // Pakai sisa_saldo_efektif langsung agar konsisten dengan Laporan
+        $sisaSaldoSaatIni = $dompetPulsa->sisa_saldo_efektif;
         $sisaSaldoDisesuaikan = $dompetPulsa->sisa_saldo_disesuaikan;
         $sisaSaldoEfektif = $dompetPulsa->sisa_saldo_efektif;
+
+        // Laba/Rugi dihitung dari sisaSaldoSaatIni (efektif) dikurangi selisih
         $labaRugi = $sisaSaldoSaatIni - $selisih;
 
         return view('dompet-pulsa.show', compact(

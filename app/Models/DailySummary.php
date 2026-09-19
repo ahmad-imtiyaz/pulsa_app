@@ -13,6 +13,9 @@ class DailySummary extends Model
 
     protected $table = 'daily_summaries';
 
+    // TAMBAHKAN BARIS INI
+    protected $dateFormat = 'Y-m-d';
+
     protected $fillable = [
         'tanggal',
         'pulsa_saldo_awal',
