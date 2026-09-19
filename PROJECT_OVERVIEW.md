@@ -55,7 +55,7 @@ DailySummary (standalone, 1 per date)
 
 ## 🧮 Key Business Logic (DompetPulsa Model)
 
-### Balance Calculations
+### Balance Calculations (Model Accessors - for live/current state)
 ```php
 // Total topup all time
 $dompet->total_topup = $dompet->topupTransactions()->sum('nominal');
@@ -66,31 +66,43 @@ $dompet->total_penjualan = $dompet->penjualanTransactions()->sum('nominal');
 // Formula: saldo_awal + total_topup - total_penjualan
 $dompet->hitungSaldoTersedia()
 
-// Adjustments sum (tambah = +, kurang = -)
+// Adjustments sum (tambah = +, kurang = -) — ALL TIME
 $dompet->adjustment_sum
 
-// Adjusted balance
+// Adjusted balance (all-time)
 $dompet->sisa_saldo_disesuaikan = hitungSaldoTersedia() + adjustment_sum
 
 // Effective balance (with manual override delta)
 $dompet->sisa_saldo_efektif = sisa_saldo_disesuaikan + saldo_delta
 ```
 
-### Daily Summary Calculation (DailySummaryService)
+### Daily Summary Calculation (DailySummaryService) — **HISTORICAL PER-DATE**
+**⚠️ IMPORTANT: Different from model accessors!** Service calculates per-date historical values.
 
-**Pulsa Laba/Rugi per wallet:**
+**Pulsa Laba/Rugi per wallet (per date):**
 ```
-modal_awal = saldo_awal (fixed)
-selisih = modal_awal - penjualan_hari_ini
-sisa_saldo_saat_ini = sisa_saldo_efektif (includes adjustments + delta)
-laba_rugi = sisa_saldo_saat_ini - selisih
+saldoAwal       = getSaldoAwalDompet(dompet, date)        // saldo akhir kemarin
+topupHariIni    = topupTransactions whereDate(tanggal, date)
+penjualanHariIni = penjualanTransactions whereDate(tanggal, date)
+
+modalAwal       = saldo_awal (fixed)
+selisih         = modalAwal - penjualanHariIni
+
+// Adjustment hanya sampai tanggal tsb (bukan semua sepanjang masa)
+adjustmentSampaiTanggal = adjustments->filter(tanggal <= date)->sum(jenis=='tambah' ? +nominal : -nominal)
+
+// saldo_delta cuma berlaku untuk HARI INI (date->isToday())
+delta = date->isToday() ? saldo_delta : 0
+
+sisaSaldoSaatIni = saldoAwal + topupHariIni - penjualanHariIni + adjustmentSampaiTanggal + delta
+labaRugi         = sisaSaldoSaatIni - selisih
 ```
 
-**Voucher Laba:** `SUM(total_penjualan - total_modal)` per date
+**Voucher Laba:** `SUM(total_penjualan - total_modal)` per date  
 **Aksesoris Laba:** `SUM(laba)` for `jenis=penjualan` per date
 
-**Total Laba Kotor = Pulsa + Voucher + Aksesoris**
-**Total Pengeluaran = Operasional + Gaji + Pribadi**
+**Total Laba Kotor = Pulsa + Voucher + Aksesoris**  
+**Total Pengeluaran = Operasional + Gaji + Pribadi**  
 **Sisa Laba = Total Laba Kotor - Total Pengeluaran**
 
 ---
@@ -104,13 +116,22 @@ laba_rugi = sisa_saldo_saat_ini - selisih
 | `/dompet-pulsa` | DompetPulsaController | `transaksi.create`, `transaksi.store`, `transaksi.edit`, `transaksi.update`, `transaksi.destroy`, `adjustments.store`, `adjustments.destroy`, `saldo-override.update` |
 | `/voucher` | VoucherController | `transaksi.create`, `transaksi.store` |
 | `/aksesoris` | AksesorisController | `transaksi.create`, `transaksi.store` |
-| `/pengeluaran` | PengeluaranController | - |
+| `/pengeluaran` | PengeluaranController | - (AJAX search on index) |
 | `/laporan` | ReportController | `penjualan`, `stok` |
 
 ### Key Controller Patterns
 - All controllers inject `DailySummaryService` via constructor
 - After any create/update/delete → calls `summaryService->recalculateForDate()` or `recalculateRange()`
 - Transaction creation calculates `total_modal`, `total_penjualan`, `laba` server-side
+
+### PengeluaranController (New: Real-time Search)
+- `index()` supports `?search=` query param (searches `keterangan`, `kategori`, `karyawan_nama`)
+- Returns JSON for AJAX: `{ html: tablePartial, pagination: paginationPartial }`
+- Frontend: Alpine.js with 300ms debounce
+
+### ReportController (Updated)
+- `index()` now calls `recalculateRange()` before fetching summaries
+- Fetches `Pengeluaran` grouped by date for "Detail Pengeluaran" table
 
 ---
 
@@ -125,7 +146,7 @@ getSaldoAwalDompet(DompetPulsa $dompet, Carbon $date): float // Saldo awal for s
 ```
 
 ### Calculation Flow (per date)
-1. **Pulsa**: Loop active dompets → get saldo awal (from prev day summary or calculate), topup, penjualan, laba/rugi
+1. **Pulsa**: Loop active dompets → get saldo awal (from prev day summary or calculate), topup, penjualan, laba/rugi with date-filtered adjustments & today-only delta
 2. **Voucher**: Sum all voucher transactions for date
 3. **Aksesoris**: Sum penjualan transactions for date
 4. **Pengeluaran**: Group by kategori (operasional/gaji/pribadi)
@@ -137,7 +158,7 @@ getSaldoAwalDompet(DompetPulsa $dompet, Carbon $date): float // Saldo awal for s
 ## 📁 Important Files Reference
 
 ### Models
-- `app/Models/DompetPulsa.php` - Complex accessors for balance calculations
+- `app/Models/DompetPulsa.php` - Complex accessors for **live/current** balance calculations
 - `app/Models/DompetPulsaTransaction.php` - Simple transaction model
 - `app/Models/Voucher.php` - Product + computed attributes
 - `app/Models/VoucherTransaction.php` - Sales record with computed totals
@@ -151,7 +172,8 @@ getSaldoAwalDompet(DompetPulsa $dompet, Carbon $date): float // Saldo awal for s
 - `app/Http/Controllers/DompetPulsaController.php` - Most complex (transactions, adjustments, saldo override)
 - `app/Http/Controllers/VoucherController.php` - Standard CRUD + transactions
 - `app/Http/Controllers/AksesorisController.php` - CRUD + transactions (pembelian/penjualan)
-- `app/Http/Controllers/ReportController.php` - Aggregated reports
+- `app/Http/Controllers/PengeluaranController.php` - CRUD + AJAX search
+- `app/Http/Controllers/ReportController.php` - Aggregated reports with pengeluaran detail
 - `app/Http/Controllers/DashboardController.php` - Thin, delegates to service
 
 ### Service
@@ -178,6 +200,7 @@ resources/views/
 │   └── transactions/create
 ├── pengeluaran/
 │   ├── index, create, edit
+│   └── partials/table.blade.php, pagination.blade.php
 ├── reports/
 │   ├── index, penjualan, stok
 └── layouts/app.blade.php
@@ -191,17 +214,29 @@ resources/views/
 
 2. **DailySummary Recalculation**: Always triggered after mutations. If reports look wrong → run `DailySummaryService->recalculateRange()`.
 
-3. **Saldo Delta (Override)**: `saldo_delta` on `DompetPulsa` is a **delta from formula**, not absolute value. `sisa_saldo_efektif = formula + delta`.
+3. **Saldo Delta (Override)**: `saldo_delta` on `DompetPulsa` is a **delta from formula**, not absolute value. In service: **only applies to TODAY** (`$date->isToday()`). Model accessor `sisa_saldo_efektif` includes it always (for live view).
 
-4. **Adjustments**: Stored in separate table `dompet_pulsa_adjustments`, affect `adjustment_sum` accessor.
+4. **Adjustments - Date Filtered in Service**: In `calculatePulsaSummary()`, only adjustments with `tanggal <= $date` are included. Model accessor `adjustment_sum` includes ALL adjustments (all-time). **This is intentional** - historical reports must reflect state at that date.
 
-4. **Voucher `nilai` column**: Removed in migration `2026_09_08_152513_remove_nilai_from_vouchers_table.php` - no longer used.
+5. **Voucher `nilai` column**: Removed in migration `2026_09_08_152513_remove_nilai_from_vouchers_table.php` - no longer used.
 
-5. **Aksesoris Transaction**: `harga_jual`, `total_penjualan`, `laba` are **nullable** for `jenis=pembelian`.
+6. **Aksesoris Transaction**: `harga_jual`, `total_penjualan`, `laba` are **nullable** for `jenis=pembelian`.
 
-6. **Pengeluaran Karyawan**: `karyawan_nama` only used when `kategori=gaji`.
+7. **Pengeluaran Karyawan**: `karyawan_nama` only used when `kategori=gaji`.
 
-7. **Date Filtering**: All transaction queries use `whereDate('tanggal', $date)` or `whereBetween('tanggal', [...])`.
+8. **Date Filtering**: All transaction queries use `whereDate('tanggal', $date)` or `whereBetween('tanggal', [...])`.
+
+9. **Dashboard vs Report Laba**: Dashboard uses model's `sisa_saldo_efektif` (live), Report uses service calculation (historical). They may differ if `saldo_delta` exists or adjustments are dated.
+
+---
+
+## 🧪 Tests (New)
+
+- `tests/Feature/PulsaLabaHistoricalTest.php` - Validates historical per-date laba calculation:
+  - Different dates produce different laba values (not same as live)
+  - Idempotent: recalculating old date after new transactions doesn't change old result
+
+- `database/seeders/PulsaBugVerificationSeeder.php` - Seeder for manual bug verification
 
 ---
 
@@ -214,11 +249,14 @@ php artisan tinker --execute "App\Services\DailySummaryService::recalculateRange
 # Check specific date summary
 php artisan tinker --execute "App\Models\DailySummary::where('tanggal', '2026-09-19')->first()"
 
-# Check dompet balances
+# Check dompet balances (live/current)
 php artisan tinker --execute "App\Models\DompetPulsa::with('transactions')->get()->each(fn(d) => dump(d->nama, d->sisa_saldo_efektif))"
 
 # Run tests
 php artisan test --compact
+
+# Run specific test
+php artisan test --filter=PulsaLabaHistoricalTest
 
 # Format code
 vendor/bin/pint --dirty --format agent
@@ -238,6 +276,18 @@ vendor/bin/pint --dirty --format agent
 - `pestphp/pest` ^3.x (testing)
 - `laravel/pint` (code style)
 - `spatie/laravel-activitylog` (if used - check composer.json)
+
+---
+
+## 📝 Changelog (Recent)
+
+| Date | Commit | Changes |
+|------|--------|---------|
+| 2026-09-19 | 0583e59 | Fix pengeluaran over-calculation; date-filtered adjustments; delta only for today; new test & seeder |
+| 2026-09-19 | 1baec84 | Fix gaji & pribadi pengeluaran queries |
+| 2026-09-19 | 12335ec | Real-time AJAX search on pengeluaran; pengeluaran detail in laporan |
+| 2026-09-18 | 1f688e1 | Add saldo_delta override for dompet pulsa |
+| 2026-09-18 | e087a41 | Sync saldo & laba calculations |
 
 ---
 
