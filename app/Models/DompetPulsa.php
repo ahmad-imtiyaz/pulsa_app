@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToUser; // <-- Baris Tambahan 1
 use Database\Factories\DompetPulsaFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class DompetPulsa extends Model
 {
     /** @use HasFactory<DompetPulsaFactory> */
-    use HasFactory;
+    use HasFactory, BelongsToUser; // <-- Baris Tambahan 2 (Tambahkan BelongsToUser di sini)
 
     protected $table = 'dompet_pulsa';
 

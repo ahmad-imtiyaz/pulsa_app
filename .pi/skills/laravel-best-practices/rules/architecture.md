@@ -153,7 +153,7 @@ dispatch(new LogPageView($page));
 Deferred in the current process:
 
 ```php
-defer(fn () => PageView::create(['page_id' => $page->id, 'user_id' => auth()->id()]));
+defer(fn () => PageView::create(['page_id' => $page->id, 'user_id' => Auth::id()]));
 ```
 
 Use a queued job when the work needs retries, queue controls, or durability across process failures.

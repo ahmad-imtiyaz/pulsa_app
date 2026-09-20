@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Services\DailySummaryService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
 
 class DashboardController extends Controller
 {
@@ -17,7 +19,7 @@ class DashboardController extends Controller
         $date = $request->get('tanggal', Carbon::today()->toDateString());
         $carbonDate = Carbon::parse($date);
 
-        $data = $this->summaryService->getDashboardData($carbonDate);
+        $data = $this->summaryService->getDashboardData($carbonDate, Auth::id());
 
         return view('dashboard', [
             'data' => $data,

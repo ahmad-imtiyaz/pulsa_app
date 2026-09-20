@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToUser;
 use Database\Factories\VoucherFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Voucher extends Model
 {
     /** @use HasFactory<VoucherFactory> */
-    use HasFactory;
+    use HasFactory, BelongsToUser;
 
     protected $table = 'vouchers';
 

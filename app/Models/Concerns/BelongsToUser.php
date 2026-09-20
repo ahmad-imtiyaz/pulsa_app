@@ -1,0 +1,27 @@
+<?php
+// app/Models/Concerns/BelongsToUser.php
+namespace App\Models\Concerns;
+
+use App\Models\Scopes\OwnedByUserScope;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Auth;
+
+trait BelongsToUser
+{
+    protected static function bootBelongsToUser(): void
+    {
+        static::addGlobalScope(new OwnedByUserScope);
+
+        static::creating(function ($model) {
+            if (empty($model->user_id) && Auth::check()) {
+                $model->user_id = Auth::id();
+            }
+        });
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+}

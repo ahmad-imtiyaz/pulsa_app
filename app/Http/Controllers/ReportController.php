@@ -13,6 +13,7 @@ use App\Models\VoucherTransaction;
 use App\Services\DailySummaryService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ReportController extends Controller
 {
@@ -25,10 +26,11 @@ class ReportController extends Controller
         $startDate = $request->get('start_date', Carbon::today()->subDays(30)->toDateString());
         $endDate = $request->get('end_date', Carbon::today()->toDateString());
 
-        // Ensure daily summaries are calculated for the date range
+        // Ensure daily summaries are calculated for the date range with explicitly passed Auth::id()
         $this->summaryService->recalculateRange(
             Carbon::parse($startDate),
-            Carbon::parse($endDate)
+            Carbon::parse($endDate),
+            Auth::id()
         );
 
         $summaries = DailySummary::whereBetween('tanggal', [$startDate, $endDate])
@@ -80,22 +82,27 @@ class ReportController extends Controller
         $startDate = $request->get('start_date', Carbon::today()->subDays(30)->toDateString());
         $endDate = $request->get('end_date', Carbon::today()->toDateString());
 
-        // Pulsa sales
+        $userId = Auth::id();
+
+        // Pulsa sales (Isolasi data via relasi dompetPulsa)
         $pulsaSales = DompetPulsaTransaction::where('jenis', 'penjualan')
             ->whereBetween('tanggal', [$startDate, $endDate])
+            ->whereHas('dompetPulsa', fn ($q) => $q->withoutGlobalScopes()->where('user_id', $userId))
             ->with('dompetPulsa')
             ->latest('tanggal')
             ->get();
 
-        // Voucher sales
+        // Voucher sales (Isolasi data via relasi voucher)
         $voucherSales = VoucherTransaction::whereBetween('tanggal', [$startDate, $endDate])
+            ->whereHas('voucher', fn ($q) => $q->withoutGlobalScopes()->where('user_id', $userId))
             ->with('voucher')
             ->latest('tanggal')
             ->get();
 
-        // Aksesoris sales
+        // Aksesoris sales (Isolasi data via relasi aksesoris)
         $aksesorisSales = AksesorisTransaction::where('jenis', 'penjualan')
             ->whereBetween('tanggal', [$startDate, $endDate])
+            ->whereHas('aksesoris', fn ($q) => $q->withoutGlobalScopes()->where('user_id', $userId))
             ->with('aksesoris')
             ->latest('tanggal')
             ->get();
@@ -106,7 +113,7 @@ class ReportController extends Controller
     public function stok(Request $request)
     {
         $dompets = DompetPulsa::where('is_active', true)->get()->map(function ($dompet) {
-            $saldoAwal = $this->summaryService->getSaldoAwalDompet($dompet, Carbon::today());
+            $saldoAwal = $this->summaryService->getSaldoAwalDompet($dompet, Carbon::today(), Auth::id());
             $topup = $dompet->topupTransactions()->where('tanggal', '<=', Carbon::today())->sum('nominal');
             $penjualan = $dompet->penjualanTransactions()->where('tanggal', '<=', Carbon::today())->sum('nominal');
 

@@ -9,6 +9,8 @@ use App\Models\VoucherTransaction;
 use App\Services\DailySummaryService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
 
 class VoucherController extends Controller
 {
@@ -66,7 +68,8 @@ class VoucherController extends Controller
 
         $this->summaryService->recalculateRange(
             Carbon::today()->subDays(30),
-            Carbon::today()->addDays(30)
+            Carbon::today()->addDays(30),
+            Auth::id()
         );
 
         return redirect()->route('voucher.index')
@@ -79,7 +82,8 @@ class VoucherController extends Controller
 
         $this->summaryService->recalculateRange(
             Carbon::today()->subDays(30),
-            Carbon::today()->addDays(30)
+            Carbon::today()->addDays(30),
+            Auth::id()
         );
 
         return redirect()->route('voucher.index')
@@ -101,7 +105,8 @@ class VoucherController extends Controller
 
         VoucherTransaction::create($data);
 
-        $this->summaryService->recalculateForDate(Carbon::parse($data['tanggal']));
+        $this->summaryService->recalculateForDate(Carbon::parse($data['tanggal']), Auth::id());
+
 
         return redirect()->route('voucher.show', $voucher)
             ->with('success', 'Transaksi voucher berhasil ditambahkan.');

@@ -14,30 +14,25 @@ use Illuminate\Support\Facades\DB;
 
 class DailySummaryService
 {
-    public function recalculateForDate(Carbon $date): DailySummary
+    public function recalculateForDate(Carbon $date, int $userId): DailySummary
     {
-        return DB::transaction(function () use ($date) {
-            $summary = DailySummary::firstOrCreate(['tanggal' => $date->toDateString()]);
+        return DB::transaction(function () use ($date, $userId) {
+            $summary = DailySummary::withoutGlobalScopes()->firstOrCreate([
+                'tanggal' => $date->toDateString(),
+                'user_id' => $userId,
+            ]);
 
-            // 1. Calculate Pulsa Summary
-            $this->calculatePulsaSummary($summary, $date);
+            $this->calculatePulsaSummary($summary, $date, $userId);
+            $this->calculateVoucherSummary($summary, $date, $userId);
+            $this->calculateAksesorisSummary($summary, $date, $userId);
 
-            // 2. Calculate Voucher Summary
-            $this->calculateVoucherSummary($summary, $date);
-
-            // 3. Calculate Aksesoris Summary
-            $this->calculateAksesorisSummary($summary, $date);
-
-            // 4. Calculate Total Laba Kotor
             $summary->total_laba_kotor =
                 $summary->pulsa_laba +
                 $summary->voucher_laba +
                 $summary->aksesoris_laba;
 
-            // 5. Calculate Pengeluaran
-            $this->calculatePengeluaranSummary($summary, $date);
+            $this->calculatePengeluaranSummary($summary, $date, $userId);
 
-            // 6. Calculate Sisa Laba
             $summary->total_pengeluaran =
                 $summary->pengeluaran_operasional +
                 $summary->pengeluaran_gaji +
@@ -51,9 +46,13 @@ class DailySummaryService
         });
     }
 
-    private function calculatePulsaSummary(DailySummary $summary, Carbon $date): void
+    private function calculatePulsaSummary(DailySummary $summary, Carbon $date, int $userId): void
     {
-        $dompets = DompetPulsa::with('adjustments')->where('is_active', true)->get();
+        $dompets = DompetPulsa::withoutGlobalScopes()
+            ->where('user_id', $userId)
+            ->where('is_active', true)
+            ->with('adjustments')
+            ->get();
 
         $totalSaldoAwal = 0;
         $totalTopup = 0;
@@ -61,7 +60,7 @@ class DailySummaryService
         $totalLabaRugi = 0;
 
         foreach ($dompets as $dompet) {
-            $saldoAwal = $this->getSaldoAwalDompet($dompet, $date);
+            $saldoAwal = $this->getSaldoAwalDompet($dompet, $date, $userId);
             $totalSaldoAwal += $saldoAwal;
 
             $topup = $dompet->topupTransactions()->whereDate('tanggal', $date)->sum('nominal');
@@ -73,13 +72,10 @@ class DailySummaryService
             $modalAwal = $dompet->saldo_awal;
             $selisih = $modalAwal - $penjualanHariIni;
 
-            // Adjustment hanya yang tanggalnya <= $date (bukan semua sepanjang masa)
             $adjustmentSampaiTanggal = $dompet->adjustments
-                ->filter(fn($a) => Carbon::parse($a->tanggal)->lte($date))
-                ->sum(fn($a) => $a->jenis === 'tambah' ? $a->nominal : -$a->nominal);
+                ->filter(fn ($a) => Carbon::parse($a->tanggal)->lte($date))
+                ->sum(fn ($a) => $a->jenis === 'tambah' ? $a->nominal : -$a->nominal);
 
-            // saldo_delta cuma valid untuk HARI INI — terkonfirmasi dari updateSaldoOverride()
-            // yang tidak pernah menyimpan tanggal override
             $delta = $date->isToday() ? ($dompet->saldo_delta ?? 0) : 0;
 
             $sisaSaldoSaatIni = $saldoAwal + $topup - $penjualanHariIni + $adjustmentSampaiTanggal + $delta;
@@ -95,15 +91,15 @@ class DailySummaryService
         $summary->pulsa_laba = $totalLabaRugi;
     }
 
-    public function getSaldoAwalDompet(DompetPulsa $dompet, Carbon $date): float
+    public function getSaldoAwalDompet(DompetPulsa $dompet, Carbon $date, int $userId): float
     {
-        // Cari daily summary kemarin untuk mendapatkan saldo akhir kemarin
         $kemarin = $date->copy()->subDay();
-        $summaryKemarin = DailySummary::where('tanggal', $kemarin->toDateString())->first();
+        $summaryKemarin = DailySummary::withoutGlobalScopes()
+            ->where('tanggal', $kemarin->toDateString())
+            ->where('user_id', $userId)
+            ->first();
 
         if ($summaryKemarin) {
-            // Ambil proporsi saldo kemarin untuk dompet ini
-            // Kita hitung berdasarkan transaksi kemarin
             $saldoAkhirKemarin = $dompet->saldo_awal
                 + $dompet->topupTransactions()->whereDate('tanggal', '<=', $kemarin)->sum('nominal')
                 - $dompet->penjualanTransactions()->whereDate('tanggal', '<=', $kemarin)->sum('nominal');
@@ -111,25 +107,31 @@ class DailySummaryService
             return max(0, $saldoAkhirKemarin);
         }
 
-        // Jika tidak ada summary kemarin, gunakan saldo_awal dompet + transaksi sebelum hari ini
         return $dompet->saldo_awal
             + $dompet->topupTransactions()->whereDate('tanggal', '<', $date)->sum('nominal')
             - $dompet->penjualanTransactions()->whereDate('tanggal', '<', $date)->sum('nominal');
     }
 
-    private function calculateVoucherSummary(DailySummary $summary, Carbon $date): void
+    private function calculateVoucherSummary(DailySummary $summary, Carbon $date, int $userId): void
     {
-        $transactions = VoucherTransaction::whereDate('tanggal', $date)->get();
+        $transactions = VoucherTransaction::whereDate('tanggal', $date)
+            ->whereHas('voucher', function ($q) use ($userId) {
+                $q->withoutGlobalScopes()->where('user_id', $userId);
+            })
+            ->get();
 
         $summary->voucher_penjualan_modal = $transactions->sum('total_modal');
         $summary->voucher_penjualan_jual = $transactions->sum('total_penjualan');
         $summary->voucher_laba = $transactions->sum('laba');
     }
 
-    private function calculateAksesorisSummary(DailySummary $summary, Carbon $date): void
+    private function calculateAksesorisSummary(DailySummary $summary, Carbon $date, int $userId): void
     {
         $transactions = AksesorisTransaction::where('jenis', 'penjualan')
             ->whereDate('tanggal', $date)
+            ->whereHas('aksesoris', function ($q) use ($userId) {
+                $q->withoutGlobalScopes()->where('user_id', $userId);
+            })
             ->get();
 
         $summary->aksesoris_penjualan_modal = $transactions->sum('total_modal');
@@ -137,82 +139,89 @@ class DailySummaryService
         $summary->aksesoris_laba = $transactions->sum('laba');
     }
 
-    private function calculatePengeluaranSummary(DailySummary $summary, Carbon $date): void
+    private function calculatePengeluaranSummary(DailySummary $summary, Carbon $date, int $userId): void
     {
-        $summary->pengeluaran_operasional = Pengeluaran::whereDate('tanggal', $date)
-            ->where('kategori', 'operasional')
-            ->sum('jumlah');
+        $base = Pengeluaran::withoutGlobalScopes()
+            ->whereDate('tanggal', $date)
+            ->where('user_id', $userId);
 
-        $summary->pengeluaran_gaji = Pengeluaran::whereDate('tanggal', $date)
-            ->where('kategori', 'gaji')
-            ->sum('jumlah');
-
-        $summary->pengeluaran_pribadi = Pengeluaran::whereDate('tanggal', $date)
-            ->where('kategori', 'pribadi')
-            ->sum('jumlah');
+        $summary->pengeluaran_operasional = (clone $base)->where('kategori', 'operasional')->sum('jumlah');
+        $summary->pengeluaran_gaji = (clone $base)->where('kategori', 'gaji')->sum('jumlah');
+        $summary->pengeluaran_pribadi = (clone $base)->where('kategori', 'pribadi')->sum('jumlah');
     }
 
-    public function recalculateRange(Carbon $startDate, Carbon $endDate): void
+    public function recalculateRange(Carbon $startDate, Carbon $endDate, int $userId): void
     {
         $current = $startDate->copy();
         while ($current->lte($endDate)) {
-            $this->recalculateForDate($current);
+            $this->recalculateForDate($current, $userId);
             $current->addDay();
         }
     }
 
-    public function getDashboardData(Carbon $date): array
+    public function getDashboardData(Carbon $date, int $userId): array
     {
-        // Always recalculate for the requested date to ensure fresh data
-        $summary = $this->recalculateForDate($date);
+        $summary = $this->recalculateForDate($date, $userId);
 
-        $dompets = DompetPulsa::with('adjustments')->where('is_active', true)->get()->map(function ($dompet) use ($date) {
-            $saldoAwal = $this->getSaldoAwalDompet($dompet, $date);
-            $topup = $dompet->topupTransactions()->whereDate('tanggal', $date)->sum('nominal');
-            $penjualan = $dompet->penjualanTransactions()->whereDate('tanggal', $date)->sum('nominal');
+        $dompets = DompetPulsa::withoutGlobalScopes()
+            ->where('user_id', $userId)
+            ->where('is_active', true)
+            ->with('adjustments')
+            ->get()
+            ->map(function ($dompet) use ($date, $userId) {
+                $saldoAwal = $this->getSaldoAwalDompet($dompet, $date, $userId);
+                $topup = $dompet->topupTransactions()->whereDate('tanggal', $date)->sum('nominal');
+                $penjualan = $dompet->penjualanTransactions()->whereDate('tanggal', $date)->sum('nominal');
 
-            // Laba/Rugi at wallet level (per dompet)
-            $modalAwal = $dompet->saldo_awal;
-            $selisih = $modalAwal - $penjualan;
-            $sisaSaldoSaatIni = $dompet->sisa_saldo_efektif;
-            $labaRugi = $sisaSaldoSaatIni - $selisih;
+                $modalAwal = $dompet->saldo_awal;
+                $selisih = $modalAwal - $penjualan;
+                $sisaSaldoSaatIni = $dompet->sisa_saldo_efektif;
+                $labaRugi = $sisaSaldoSaatIni - $selisih;
 
-            return [
-                'id' => $dompet->id,
-                'nama' => $dompet->nama,
-                'kode' => $dompet->kode,
-                'saldo_awal' => $saldoAwal,
-                'topup' => $topup,
-                'penjualan' => $penjualan,
-                'saldo_akhir' => $saldoAwal + $topup - $penjualan,
-                'laba' => $labaRugi,
-            ];
-        });
+                return [
+                    'id' => $dompet->id,
+                    'nama' => $dompet->nama,
+                    'kode' => $dompet->kode,
+                    'saldo_awal' => $saldoAwal,
+                    'topup' => $topup,
+                    'penjualan' => $penjualan,
+                    'saldo_akhir' => $saldoAwal + $topup - $penjualan,
+                    'laba' => $labaRugi,
+                ];
+            });
 
-        $vouchers = Voucher::where('status', 'aktif')->get()->map(function ($voucher) use ($date) {
-            $transactions = $voucher->transactions()->whereDate('tanggal', $date);
+        $vouchers = Voucher::withoutGlobalScopes()
+            ->where('user_id', $userId)
+            ->where('status', 'aktif')
+            ->get()
+            ->map(function ($voucher) use ($date) {
+                $transactions = $voucher->transactions()->whereDate('tanggal', $date);
 
-            return [
-                'id' => $voucher->id,
-                'nama' => $voucher->nama,
-                'stok' => $voucher->hitungStokTersedia(),
-                'terjual_hari_ini' => $transactions->sum('jumlah'),
-                'laba_hari_ini' => $transactions->sum('laba'),
-            ];
-        });
+                return [
+                    'id' => $voucher->id,
+                    'nama' => $voucher->nama,
+                    'stok' => $voucher->hitungStokTersedia(),
+                    'terjual_hari_ini' => $transactions->sum('jumlah'),
+                    'laba_hari_ini' => $transactions->sum('laba'),
+                ];
+            });
 
-        $aksesoris = Aksesoris::where('is_active', true)->get()->map(function ($aksesoris) use ($date) {
-            $penjualan = $aksesoris->penjualanTransactions()->whereDate('tanggal', $date);
+        $aksesoris = Aksesoris::withoutGlobalScopes()
+            ->where('user_id', $userId)
+            ->where('is_active', true)
+            ->get()
+            ->map(function ($aksesoris) use ($date) {
+                $penjualan = $aksesoris->penjualanTransactions()->whereDate('tanggal', $date);
 
-            return [
-                'id' => $aksesoris->id,
-                'nama' => $aksesoris->nama,
-                'sku' => $aksesoris->sku,
-                'stok' => $aksesoris->hitungStokTersedia(),
-                'terjual_hari_ini' => $penjualan->sum('jumlah'),
-                'laba_hari_ini' => $penjualan->sum('laba'),
-            ];
-        });
+                return [
+                    'id' => $aksesoris->id,
+                    'nama' => $aksesoris->nama,
+                    'sku' => $aksesoris->sku,
+                    'stok' => $aksesoris->hitungStokTersedia(),
+                    'terjual_hari_ini' => $penjualan->sum('jumlah'),
+                    'laba_hari_ini' => $penjualan->sum('laba'),
+                ];
+            });
 
         return [
             'tanggal' => $date->toDateString(),

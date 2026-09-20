@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToUser;
 use Database\Factories\DailySummaryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class DailySummary extends Model
 {
     /** @use HasFactory<DailySummaryFactory> */
-    use HasFactory;
+    use HasFactory, BelongsToUser;
 
     protected $table = 'daily_summaries';
 

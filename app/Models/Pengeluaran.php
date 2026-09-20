@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToUser;
 use Database\Factories\PengeluaranFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class Pengeluaran extends Model
 {
     /** @use HasFactory<PengeluaranFactory> */
-    use HasFactory;
+    use HasFactory, BelongsToUser;
 
     protected $table = 'pengeluaran';
 

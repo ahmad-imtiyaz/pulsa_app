@@ -7,6 +7,7 @@ use App\Models\Pengeluaran;
 use App\Services\DailySummaryService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PengeluaranController extends Controller
 {
@@ -48,7 +49,7 @@ class PengeluaranController extends Controller
     {
         Pengeluaran::create($request->validated());
 
-        $this->summaryService->recalculateForDate(Carbon::parse($request->tanggal));
+        $this->summaryService->recalculateForDate(Carbon::parse($request->tanggal), Auth::id());
 
         return redirect()->route('pengeluaran.index')
             ->with('success', 'Pengeluaran berhasil ditambahkan.');
@@ -68,7 +69,7 @@ class PengeluaranController extends Controller
     {
         $pengeluaran->update($request->validated());
 
-        $this->summaryService->recalculateForDate(Carbon::parse($request->tanggal));
+       $this->summaryService->recalculateForDate(Carbon::parse($request->tanggal), Auth::id());
 
         return redirect()->route('pengeluaran.index')
             ->with('success', 'Pengeluaran berhasil diperbarui.');
@@ -79,7 +80,7 @@ class PengeluaranController extends Controller
         $tanggal = $pengeluaran->tanggal;
         $pengeluaran->delete();
 
-        $this->summaryService->recalculateForDate(Carbon::parse($tanggal));
+        $this->summaryService->recalculateForDate(Carbon::parse($tanggal), Auth::id());
 
         return redirect()->route('pengeluaran.index')
             ->with('success', 'Pengeluaran berhasil dihapus.');
