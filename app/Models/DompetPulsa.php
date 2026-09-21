@@ -64,6 +64,12 @@ class DompetPulsa extends Model
         return $this->penjualanTransactions()->sum('nominal');
     }
 
+    public function getModalAwalEfektifAttribute(): float
+    {
+        // Modal Awal sekarang tumbuh mengikuti Top Up, bukan lagi statis
+        return $this->saldo_awal + $this->total_topup;
+    }
+
     public function hitungSaldoTersedia(): float
     {
         return $this->saldo_awal + $this->total_topup - $this->total_penjualan;

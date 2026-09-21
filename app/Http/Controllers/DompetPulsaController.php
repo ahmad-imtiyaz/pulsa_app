@@ -67,7 +67,7 @@ class DompetPulsaController extends Controller
         $penjualanHariIni = $dompetPulsa->penjualanTransactions()->where('tanggal', Carbon::today())->sum('nominal');
         $saldoAkhir = $saldoAwal + $topupHariIni - $penjualanHariIni;
 
-        $modalAwal = $dompetPulsa->saldo_awal;
+        $modalAwal = $dompetPulsa->modal_awal_efektif;
         $selisih = $modalAwal - $penjualanHariIni;
 
         $sisaSaldoSaatIni = $dompetPulsa->sisa_saldo_efektif;

@@ -3,6 +3,7 @@
 use App\Models\DailySummary;
 use App\Models\DompetPulsa;
 use App\Models\DompetPulsaTransaction;
+use App\Models\User;
 use App\Services\DailySummaryService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -10,12 +11,15 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 it('menghitung laba pulsa berbeda per tanggal sesuai transaksi di tanggal itu, bukan saldo live hari ini', function () {
+    $user = User::factory()->create();
+    test()->actingAs($user);
+
     $today = Carbon::today();
-    $day1 = $today->copy()->subDays(4); // sebelum topup
-    $day2 = $today->copy()->subDays(3); // sebelum topup
-    $day3 = $today->copy()->subDays(2); // hari topup besar
-    $day4 = $today->copy()->subDays(1); // setelah topup
-    $day5 = $today->copy();             // hari ini, setelah topup
+    $day1 = $today->copy()->subDays(4);
+    $day2 = $today->copy()->subDays(3);
+    $day3 = $today->copy()->subDays(2);
+    $day4 = $today->copy()->subDays(1);
+    $day5 = $today->copy();
 
     $wallet1 = DompetPulsa::create([
         'nama' => 'TEST WALLET 1', 'kode' => 'TW1',
@@ -42,30 +46,27 @@ it('menghitung laba pulsa berbeda per tanggal sesuai transaksi di tanggal itu, b
     DompetPulsaTransaction::create(['dompet_pulsa_id' => $wallet1->id, 'jenis' => 'penjualan', 'tanggal' => $day5, 'nominal' => 90_000]);
     DompetPulsaTransaction::create(['dompet_pulsa_id' => $wallet2->id, 'jenis' => 'penjualan', 'tanggal' => $day5, 'nominal' => 40_000]);
 
-    app(DailySummaryService::class)->recalculateRange($day1, $day5);
+    app(DailySummaryService::class)->recalculateRange($day1, $day5, $user->id);
 
     $summaries = DailySummary::whereBetween('tanggal', [$day1->toDateString(), $day5->toDateString()])
         ->orderBy('tanggal')
         ->get()
         ->keyBy(fn ($s) => $s->tanggal->toDateString());
 
-    // === Regression check utama ===
-    // Kalau ini gagal (nilai day1 == nilai day5), berarti bug lama
-    // (pakai saldo live/current, bukan saldo per tanggal) masih ada.
     expect((float) $summaries[$day1->toDateString()]->pulsa_laba)
         ->not->toEqual((float) $summaries[$day5->toDateString()]->pulsa_laba);
 
-    // === Nilai eksak per tanggal ===
-    // Dihitung manual dari rumus yang sudah di-fix:
-    // labaRugi(tanggal) = saldo_akhir_kemarin - saldo_awal_tetap + topup(tanggal)
     expect((float) $summaries[$day1->toDateString()]->pulsa_laba)->toEqual(0.0);
     expect((float) $summaries[$day2->toDateString()]->pulsa_laba)->toEqual(-150_000.0);
-    expect((float) $summaries[$day3->toDateString()]->pulsa_laba)->toEqual(-30_000.0);
-    expect((float) $summaries[$day4->toDateString()]->pulsa_laba)->toEqual(-60_000.0);
-    expect((float) $summaries[$day5->toDateString()]->pulsa_laba)->toEqual(-120_000.0);
+    expect((float) $summaries[$day3->toDateString()]->pulsa_laba)->toEqual(-230_000.0);
+    expect((float) $summaries[$day4->toDateString()]->pulsa_laba)->toEqual(-260_000.0);
+    expect((float) $summaries[$day5->toDateString()]->pulsa_laba)->toEqual(-320_000.0);
 });
 
 it('tidak berubah lagi kalau recalculateForDate dipanggil ulang di kemudian hari (idempotent per tanggal)', function () {
+    $user = User::factory()->create();
+    test()->actingAs($user);
+
     $date = Carbon::today()->subDays(2);
 
     $wallet = DompetPulsa::create([
@@ -77,17 +78,14 @@ it('tidak berubah lagi kalau recalculateForDate dipanggil ulang di kemudian hari
     DompetPulsaTransaction::create(['dompet_pulsa_id' => $wallet->id, 'jenis' => 'penjualan', 'tanggal' => $date, 'nominal' => 20_000]);
 
     $service = app(DailySummaryService::class);
-    $first = $service->recalculateForDate($date->copy());
+    $first = $service->recalculateForDate($date->copy(), $user->id);
 
-    // Simulasikan waktu berjalan: transaksi baru dibuat di HARI LAIN (bukan $date)
     DompetPulsaTransaction::create([
         'dompet_pulsa_id' => $wallet->id, 'jenis' => 'topup',
         'tanggal' => Carbon::today(), 'nominal' => 5_000_000,
     ]);
 
-    // Recalculate ulang untuk tanggal LAMA — hasilnya harus TETAP SAMA,
-    // tidak boleh ikut berubah gara-gara ada topup besar di hari lain.
-    $second = $service->recalculateForDate($date->copy());
+    $second = $service->recalculateForDate($date->copy(), $user->id);
 
     expect((float) $second->pulsa_laba)->toEqual((float) $first->pulsa_laba);
 });

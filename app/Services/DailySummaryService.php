@@ -69,12 +69,13 @@ class DailySummaryService
             $penjualanHariIni = $dompet->penjualanTransactions()->whereDate('tanggal', $date)->sum('nominal');
             $totalPenjualan += $penjualanHariIni;
 
-            $modalAwal = $dompet->saldo_awal;
+            $cumulativeTopupSampaiTanggal = $dompet->topupTransactions()->whereDate('tanggal', '<=', $date)->sum('nominal');
+            $modalAwal = $dompet->saldo_awal + $cumulativeTopupSampaiTanggal;
             $selisih = $modalAwal - $penjualanHariIni;
 
             $adjustmentSampaiTanggal = $dompet->adjustments
-                ->filter(fn ($a) => Carbon::parse($a->tanggal)->lte($date))
-                ->sum(fn ($a) => $a->jenis === 'tambah' ? $a->nominal : -$a->nominal);
+                ->filter(fn($a) => Carbon::parse($a->tanggal)->lte($date))
+                ->sum(fn($a) => $a->jenis === 'tambah' ? $a->nominal : -$a->nominal);
 
             $delta = $date->isToday() ? ($dompet->saldo_delta ?? 0) : 0;
 
@@ -173,7 +174,7 @@ class DailySummaryService
                 $topup = $dompet->topupTransactions()->whereDate('tanggal', $date)->sum('nominal');
                 $penjualan = $dompet->penjualanTransactions()->whereDate('tanggal', $date)->sum('nominal');
 
-                $modalAwal = $dompet->saldo_awal;
+                $modalAwal = $dompet->modal_awal_efektif;
                 $selisih = $modalAwal - $penjualan;
                 $sisaSaldoSaatIni = $dompet->sisa_saldo_efektif;
                 $labaRugi = $sisaSaldoSaatIni - $selisih;

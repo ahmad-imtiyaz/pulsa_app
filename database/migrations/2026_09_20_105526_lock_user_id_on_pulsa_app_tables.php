@@ -23,9 +23,10 @@ return new class extends Migration
 
     private function lockUserId(string $table, ?array $uniqueColumns): void
     {
-        $column = DB::selectOne("SHOW COLUMNS FROM `{$table}` WHERE Field = 'user_id'");
+        $columns = Schema::getColumns($table);
+        $userIdColumn = collect($columns)->firstWhere('name', 'user_id');
 
-        if ($column && $column->Null === 'YES') {
+        if ($userIdColumn && $userIdColumn['nullable']) {
             Schema::table($table, function (Blueprint $t) {
                 $t->foreignId('user_id')->nullable(false)->change();
             });

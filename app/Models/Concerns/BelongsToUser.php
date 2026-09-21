@@ -4,9 +4,13 @@ namespace App\Models\Concerns;
 
 use App\Models\Scopes\OwnedByUserScope;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * @mixin Model
+ */
 trait BelongsToUser
 {
     protected static function bootBelongsToUser(): void
