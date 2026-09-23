@@ -43,7 +43,7 @@
                 <h2 class="text-lg font-semibold text-gray-900">Riwayat Transaksi</h2>
                 <a href="{{ route('voucher.transaksi.create', $voucher) }}" class="text-sm text-blue-600 hover:text-blue-800">Tambah Transaksi</a>
             </div>
-            
+
             @if ($transactions->isEmpty())
                 <div class="p-12 text-center">
                     <svg class="w-12 h-12 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
@@ -62,6 +62,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Jual</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laba</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterangan</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -75,12 +76,22 @@
                                     <td class="px-6 py-4 text-gray-900">Rp {{ number_format($tx->total_penjualan, 0, ',', '.') }}</td>
                                     <td class="px-6 py-4 font-medium text-green-600">Rp {{ number_format($tx->laba, 0, ',', '.') }}</td>
                                     <td class="px-6 py-4 text-gray-500">{{ $tx->keterangan ?? '-' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center space-x-2">
+                                            <a href="{{ route('voucher.transaksi.edit', [$voucher, $tx]) }}" class="px-2 py-1 text-xs text-blue-600 hover:text-blue-800 hover:underline">Edit</a>
+                                            <form method="POST" action="{{ route('voucher.transaksi.destroy', [$voucher, $tx]) }}" class="inline" onsubmit="return confirm('Yakin ingin menghapus transaksi ini?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:underline">Hapus</button>
+                                            </form>
+                                        </div>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-                
+
                 <div class="px-6 py-4 border-t border-gray-200">
                     {{ $transactions->links() }}
                 </div>

@@ -111,4 +111,35 @@ class VoucherController extends Controller
         return redirect()->route('voucher.show', $voucher)
             ->with('success', 'Transaksi voucher berhasil ditambahkan.');
     }
+
+    public function editTransaction(Voucher $voucher, VoucherTransaction $transaksi)
+    {
+        return view('voucher.transactions.edit', compact('voucher', 'transaksi'));
+    }
+
+    public function updateTransaction(VoucherTransactionRequest $request, Voucher $voucher, VoucherTransaction $transaksi)
+    {
+        $data = $request->validated();
+        $data['total_modal'] = $data['harga_modal'] * $data['jumlah'];
+        $data['total_penjualan'] = $data['harga_jual'] * $data['jumlah'];
+        $data['laba'] = $data['total_penjualan'] - $data['total_modal'];
+
+        $transaksi->update($data);
+
+        $this->summaryService->recalculateForDate(Carbon::parse($data['tanggal']), Auth::id());
+
+        return redirect()->route('voucher.show', $voucher)
+            ->with('success', 'Transaksi voucher berhasil diperbarui.');
+    }
+
+    public function destroyTransaction(Voucher $voucher, VoucherTransaction $transaksi)
+    {
+        $tanggal = $transaksi->tanggal;
+        $transaksi->delete();
+
+        $this->summaryService->recalculateForDate(Carbon::parse($tanggal), Auth::id());
+
+        return redirect()->route('voucher.show', $voucher)
+            ->with('success', 'Transaksi voucher berhasil dihapus.');
+    }
 }

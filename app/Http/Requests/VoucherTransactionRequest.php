@@ -42,6 +42,17 @@ class VoucherTransactionRequest extends FormRequest
 
             if ($voucher) {
                 $stokTersedia = $voucher->hitungStokTersedia();
+
+                // Saat EDIT transaksi (bukan create), jumlah transaksi yang sedang
+                // diedit sudah ikut mengurangi stok tersedia versi lama. Tambahkan
+                // kembali dulu supaya validasi membandingkan terhadap stok yang
+                // benar (seolah transaksi lama belum ada), bukan stok yang sudah
+                // "kepotong" oleh dirinya sendiri.
+                $transaksi = $this->route('transaksi');
+                if ($transaksi) {
+                    $stokTersedia += $transaksi->jumlah;
+                }
+
                 if ($this->jumlah > $stokTersedia) {
                     $validator->errors()->add('jumlah', "Jumlah melebihi stok tersedia ({$stokTersedia}).");
                 }

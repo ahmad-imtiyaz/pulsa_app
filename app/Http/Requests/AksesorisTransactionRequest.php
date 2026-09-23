@@ -56,6 +56,19 @@ class AksesorisTransactionRequest extends FormRequest
             $aksesoris = $this->route('aksesoris');
             if ($aksesoris && $this->jenis === 'penjualan') {
                 $stokTersedia = $aksesoris->hitungStokTersedia();
+
+                // Saat EDIT transaksi (bukan create): kalau transaksi yang sedang
+                // diedit SEBELUMNYA juga jenis 'penjualan', jumlah lamanya sudah
+                // ikut mengurangi stok tersedia. Tambahkan kembali supaya validasi
+                // dibandingkan terhadap stok seolah transaksi lama belum ada.
+                // Kalau transaksi lama jenisnya 'pembelian' (baru diubah ke
+                // 'penjualan' saat edit), tidak perlu ditambahkan kembali karena
+                // pembelian tidak mengurangi stok lewat jalur yang sama.
+                $transaksi = $this->route('transaksi');
+                if ($transaksi && $transaksi->jenis === 'penjualan') {
+                    $stokTersedia += $transaksi->jumlah;
+                }
+
                 if ($this->jumlah > $stokTersedia) {
                     $validator->errors()->add('jumlah', "Jumlah melebihi stok tersedia ({$stokTersedia}).");
                 }

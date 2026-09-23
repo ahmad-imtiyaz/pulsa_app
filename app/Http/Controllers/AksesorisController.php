@@ -117,4 +117,42 @@ class AksesorisController extends Controller
         return redirect()->route('aksesoris.show', $aksesoris)
             ->with('success', 'Transaksi aksesoris berhasil ditambahkan.');
     }
+
+    public function editTransaction(Aksesoris $aksesoris, AksesorisTransaction $transaksi)
+    {
+        return view('aksesoris.transactions.edit', compact('aksesoris', 'transaksi'));
+    }
+
+    public function updateTransaction(AksesorisTransactionRequest $request, Aksesoris $aksesoris, AksesorisTransaction $transaksi)
+    {
+        $data = $request->validated();
+        $data['total_modal'] = $data['harga_modal'] * $data['jumlah'];
+
+        if ($data['jenis'] === 'penjualan') {
+            $data['total_penjualan'] = $data['harga_jual'] * $data['jumlah'];
+            $data['laba'] = $data['total_penjualan'] - $data['total_modal'];
+        } else {
+            $data['total_penjualan'] = null;
+            $data['laba'] = 0;
+            $data['harga_jual'] = null;
+        }
+
+        $transaksi->update($data);
+
+        $this->summaryService->recalculateForDate(Carbon::parse($data['tanggal']), Auth::id());
+
+        return redirect()->route('aksesoris.show', $aksesoris)
+            ->with('success', 'Transaksi aksesoris berhasil diperbarui.');
+    }
+
+    public function destroyTransaction(Aksesoris $aksesoris, AksesorisTransaction $transaksi)
+    {
+        $tanggal = $transaksi->tanggal;
+        $transaksi->delete();
+
+        $this->summaryService->recalculateForDate(Carbon::parse($tanggal), Auth::id());
+
+        return redirect()->route('aksesoris.show', $aksesoris)
+            ->with('success', 'Transaksi aksesoris berhasil dihapus.');
+    }
 }

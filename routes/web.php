@@ -39,12 +39,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('voucher/{voucher}/transaksi/create', [VoucherController::class, 'createTransaction'])->name('voucher.transaksi.create');
     Route::post('voucher/{voucher}/transaksi', [VoucherController::class, 'storeTransaction'])->name('voucher.transaksi.store');
 
+    Route::get('voucher/{voucher}/transaksi/{transaksi}/edit', [VoucherController::class, 'editTransaction'])->name('voucher.transaksi.edit');
+    Route::put('voucher/{voucher}/transaksi/{transaksi}', [VoucherController::class, 'updateTransaction'])->name('voucher.transaksi.update');
+    Route::delete('voucher/{voucher}/transaksi/{transaksi}', [VoucherController::class, 'destroyTransaction'])->name('voucher.transaksi.destroy');
+
     // Aksesoris
     Route::resource('aksesoris', AksesorisController::class)->parameters([
         'aksesoris' => 'aksesoris',
     ]);
     Route::get('aksesoris/{aksesoris}/transaksi/create', [AksesorisController::class, 'createTransaction'])->name('aksesoris.transaksi.create');
     Route::post('aksesoris/{aksesoris}/transaksi', [AksesorisController::class, 'storeTransaction'])->name('aksesoris.transaksi.store');
+
+    Route::get('aksesoris/{aksesoris}/transaksi/{transaksi}/edit', [AksesorisController::class, 'editTransaction'])->name('aksesoris.transaksi.edit');
+    Route::put('aksesoris/{aksesoris}/transaksi/{transaksi}', [AksesorisController::class, 'updateTransaction'])->name('aksesoris.transaksi.update');
+    Route::delete('aksesoris/{aksesoris}/transaksi/{transaksi}', [AksesorisController::class, 'destroyTransaction'])->name('aksesoris.transaksi.destroy');
 
     // Pengeluaran
     Route::resource('pengeluaran', PengeluaranController::class);
@@ -57,4 +65,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

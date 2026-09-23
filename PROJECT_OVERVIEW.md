@@ -114,8 +114,8 @@ labaRugi         = sisaSaldoSaatIni - selisih
 |----------|------------|---------------|
 | `/dashboard` | DashboardController | - |
 | `/dompet-pulsa` | DompetPulsaController | `transaksi.create`, `transaksi.store`, `transaksi.edit`, `transaksi.update`, `transaksi.destroy`, `adjustments.store`, `adjustments.destroy`, `saldo-override.update` |
-| `/voucher` | VoucherController | `transaksi.create`, `transaksi.store` |
-| `/aksesoris` | AksesorisController | `transaksi.create`, `transaksi.store` |
+| `/voucher` | VoucherController | `transaksi.create`, `transaksi.store`, `transaksi.edit`, `transaksi.update`, `transaksi.destroy` |
+| `/aksesoris` | AksesorisController | `transaksi.create`, `transaksi.store`, `transaksi.edit`, `transaksi.update`, `transaksi.destroy` |
 | `/pengeluaran` | PengeluaranController | - (AJAX search on index) |
 | `/laporan` | ReportController | `penjualan`, `stok` |
 
@@ -123,6 +123,7 @@ labaRugi         = sisaSaldoSaatIni - selisih
 - All controllers inject `DailySummaryService` via constructor
 - After any create/update/delete → calls `summaryService->recalculateForDate()` or `recalculateRange()`
 - Transaction creation calculates `total_modal`, `total_penjualan`, `laba` server-side
+- Voucher & Aksesoris transactions now support full CRUD (create, edit, update, destroy)
 
 ### PengeluaranController (New: Real-time Search)
 - `index()` supports `?search=` query param (searches `keterangan`, `kategori`, `karyawan_nama`)
@@ -170,8 +171,8 @@ getSaldoAwalDompet(DompetPulsa $dompet, Carbon $date): float // Saldo awal for s
 
 ### Controllers
 - `app/Http/Controllers/DompetPulsaController.php` - Most complex (transactions, adjustments, saldo override)
-- `app/Http/Controllers/VoucherController.php` - Standard CRUD + transactions
-- `app/Http/Controllers/AksesorisController.php` - CRUD + transactions (pembelian/penjualan)
+- `app/Http/Controllers/VoucherController.php` - Standard CRUD + transactions (create, edit, update, destroy)
+- `app/Http/Controllers/AksesorisController.php` - CRUD + transactions (pembelian/penjualan, create, edit, update, destroy)
 - `app/Http/Controllers/PengeluaranController.php` - CRUD + AJAX search
 - `app/Http/Controllers/ReportController.php` - Aggregated reports with pengeluaran detail
 - `app/Http/Controllers/DashboardController.php` - Thin, delegates to service
@@ -181,8 +182,8 @@ getSaldoAwalDompet(DompetPulsa $dompet, Carbon $date): float // Saldo awal for s
 
 ### Requests (Validation)
 - `DompetPulsaRequest`, `DompetPulsaTransactionRequest`
-- `VoucherRequest`, `VoucherTransactionRequest`
-- `AksesorisRequest`, `AksesorisTransactionRequest`
+- `VoucherRequest`, `VoucherTransactionRequest` (stock validation handles edit correctly)
+- `AksesorisRequest`, `AksesorisTransactionRequest` (stock validation handles edit correctly)
 - `PengeluaranRequest`
 
 ### Views Structure
@@ -194,10 +195,10 @@ resources/views/
 │   └── transactions/create, edit
 ├── voucher/
 │   ├── index, create, edit, show
-│   └── transactions/create
+│   └── transactions/create, edit
 ├── aksesoris/
 │   ├── index, create, edit, show
-│   └── transactions/create
+│   └── transactions/create, edit
 ├── pengeluaran/
 │   ├── index, create, edit
 │   └── partials/table.blade.php, pagination.blade.php
@@ -283,6 +284,7 @@ vendor/bin/pint --dirty --format agent
 
 | Date | Commit | Changes |
 |------|--------|---------|
+| 2026-09-23 | - | Add Edit/Delete for Voucher & Aksesoris transactions; fix stock validation on edit |
 | 2026-09-19 | 0583e59 | Fix pengeluaran over-calculation; date-filtered adjustments; delta only for today; new test & seeder |
 | 2026-09-19 | 1baec84 | Fix gaji & pribadi pengeluaran queries |
 | 2026-09-19 | 12335ec | Real-time AJAX search on pengeluaran; pengeluaran detail in laporan |
