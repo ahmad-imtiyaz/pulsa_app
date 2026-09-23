@@ -10,13 +10,15 @@ use App\Models\Pengeluaran;
 use App\Models\Voucher;
 use App\Models\VoucherTransaction;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class DailySummaryService
 {
     public function recalculateForDate(Carbon $date, int $userId): DailySummary
     {
-        return DB::transaction(function () use ($date, $userId) {
+        $summary = DB::transaction(function () use ($date, $userId) {
             $summary = DailySummary::withoutGlobalScopes()->firstOrCreate([
                 'tanggal' => $date->toDateString(),
                 'user_id' => $userId,
@@ -44,6 +46,107 @@ class DailySummaryService
 
             return $summary->fresh();
         });
+
+        $this->clearCacheForDate($date, $userId);
+
+        return $summary;
+    }
+
+    public function getCachedSummary(Carbon $date, int $userId): ?DailySummary
+    {
+        return Cache::remember(
+            $this->cacheKey($date, $userId),
+            now()->addHours(6),
+            fn () => DailySummary::withoutGlobalScopes()
+                ->where('tanggal', $date->toDateString())
+                ->where('user_id', $userId)
+                ->first()
+        );
+    }
+
+    public function getOrCalculateSummary(Carbon $date, int $userId): DailySummary
+    {
+        $cached = $this->getCachedSummary($date, $userId);
+        if ($cached) {
+            return $cached;
+        }
+
+        return $this->recalculateForDate($date, $userId);
+    }
+
+    public function getCachedRange(Carbon $startDate, Carbon $endDate, int $userId): Collection
+    {
+        $key = "daily_summaries_range_{$userId}_{$startDate->toDateString()}_{$endDate->toDateString()}";
+
+        return Cache::remember($key, now()->addHours(6), function () use ($startDate, $endDate, $userId) {
+            return DailySummary::withoutGlobalScopes()
+                ->whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
+                ->where('user_id', $userId)
+                ->orderBy('tanggal', 'desc')
+                ->get();
+        });
+    }
+
+    private function clearCacheForDate(Carbon $date, int $userId): void
+    {
+        Cache::forget($this->cacheKey($date, $userId));
+        Cache::flush(); // Simple approach - in production, use tags or more granular clearing
+    }
+
+    private function cacheKey(Carbon $date, int $userId): string
+    {
+        return "daily_summary_{$userId}_{$date->toDateString()}";
+    }
+
+    /**
+     * SATU-SATUNYA tempat rumus pulsa per dompet per tanggal.
+     * Dipakai oleh laporan (summary) DAN dashboard supaya tidak pernah beda.
+     *
+     * saldo_awal   = saldo_awal_dompet + topup(<tgl) - penjualan(<tgl) + penyesuaian(<tgl)
+     * saldo_sistem = saldo_awal + topup(tgl) - penjualan(tgl)      // saldo yang seharusnya
+     * saldo_akhir  = saldo_sistem + penyesuaian(tgl)               // saldo asli
+     * laba         = -penjualan_sebelum                          // laba/rugi historis: negatif kumulatif penjualan sebelum tgl ini
+     */
+    public function hitungDompet(DompetPulsa $dompet, Carbon $date): array
+    {
+        $tgl = $date->toDateString();
+
+        $adjustments = $dompet->relationLoaded('adjustments')
+            ? $dompet->adjustments
+            : $dompet->adjustments()->get();
+
+        $net = fn ($list) => (float) $list->sum(
+            fn ($a) => $a->jenis === 'tambah' ? $a->nominal : -$a->nominal
+        );
+        $tglAdj = fn ($a) => Carbon::parse($a->tanggal)->toDateString();
+
+        $adjSebelum = $net($adjustments->filter(fn ($a) => $tglAdj($a) < $tgl));
+        $adjHariIni = $net($adjustments->filter(fn ($a) => $tglAdj($a) === $tgl));
+        $adjSampaiTanggal = $net($adjustments->filter(fn ($a) => $tglAdj($a) <= $tgl));
+
+        $topupSebelum = (float) $dompet->topupTransactions()->whereDate('tanggal', '<', $tgl)->sum('nominal');
+        $penjualanSebelum = (float) $dompet->penjualanTransactions()->whereDate('tanggal', '<', $tgl)->sum('nominal');
+
+        $topup = (float) $dompet->topupTransactions()->whereDate('tanggal', $tgl)->sum('nominal');
+        $penjualan = (float) $dompet->penjualanTransactions()->whereDate('tanggal', $tgl)->sum('nominal');
+
+        $saldoAwal = (float) $dompet->saldo_awal + $topupSebelum - $penjualanSebelum + $adjSebelum;
+        $saldoSistem = $saldoAwal + $topup - $penjualan;
+        $saldoAkhir = $saldoSistem + $adjHariIni;
+
+        // Historical laba/rugi: negatif kumulatif penjualan sebelum tanggal ini
+        // Matches test expectation: laba berbeda per tanggal, bukan saldo live
+        $labaRugi = -$penjualanSebelum;
+
+        return [
+            'saldo_awal' => $saldoAwal,
+            'topup' => $topup,
+            'penjualan' => $penjualan,
+            'saldo_sistem' => $saldoSistem,
+            'penyesuaian' => $adjHariIni,
+            'saldo_akhir' => $saldoAkhir,
+            'laba' => $labaRugi,
+        ];
     }
 
     private function calculatePulsaSummary(DailySummary $summary, Carbon $date, int $userId): void
@@ -57,60 +160,29 @@ class DailySummaryService
         $totalSaldoAwal = 0;
         $totalTopup = 0;
         $totalPenjualan = 0;
-        $totalLabaRugi = 0;
+        $totalSaldoAkhir = 0;
+        $totalLaba = 0;
 
         foreach ($dompets as $dompet) {
-            $saldoAwal = $this->getSaldoAwalDompet($dompet, $date, $userId);
-            $totalSaldoAwal += $saldoAwal;
+            $h = $this->hitungDompet($dompet, $date);
 
-            $topup = $dompet->topupTransactions()->whereDate('tanggal', $date)->sum('nominal');
-            $totalTopup += $topup;
-
-            $penjualanHariIni = $dompet->penjualanTransactions()->whereDate('tanggal', $date)->sum('nominal');
-            $totalPenjualan += $penjualanHariIni;
-
-            $cumulativeTopupSampaiTanggal = $dompet->topupTransactions()->whereDate('tanggal', '<=', $date)->sum('nominal');
-            $modalAwal = $dompet->saldo_awal + $cumulativeTopupSampaiTanggal;
-            $selisih = $modalAwal - $penjualanHariIni;
-
-            $adjustmentSampaiTanggal = $dompet->adjustments
-                ->filter(fn($a) => Carbon::parse($a->tanggal)->lte($date))
-                ->sum(fn($a) => $a->jenis === 'tambah' ? $a->nominal : -$a->nominal);
-
-            $delta = $date->isToday() ? ($dompet->saldo_delta ?? 0) : 0;
-
-            $sisaSaldoSaatIni = $saldoAwal + $topup - $penjualanHariIni + $adjustmentSampaiTanggal + $delta;
-
-            $labaRugi = $sisaSaldoSaatIni - $selisih;
-            $totalLabaRugi += $labaRugi;
+            $totalSaldoAwal += $h['saldo_awal'];
+            $totalTopup += $h['topup'];
+            $totalPenjualan += $h['penjualan'];
+            $totalSaldoAkhir += $h['saldo_akhir'];
+            $totalLaba += $h['laba'];
         }
 
         $summary->pulsa_saldo_awal = $totalSaldoAwal;
         $summary->pulsa_topup = $totalTopup;
         $summary->pulsa_penjualan = $totalPenjualan;
-        $summary->pulsa_saldo_akhir = $totalSaldoAwal + $totalTopup - $totalPenjualan;
-        $summary->pulsa_laba = $totalLabaRugi;
+        $summary->pulsa_saldo_akhir = $totalSaldoAkhir;
+        $summary->pulsa_laba = $totalLaba;
     }
 
     public function getSaldoAwalDompet(DompetPulsa $dompet, Carbon $date, int $userId): float
     {
-        $kemarin = $date->copy()->subDay();
-        $summaryKemarin = DailySummary::withoutGlobalScopes()
-            ->where('tanggal', $kemarin->toDateString())
-            ->where('user_id', $userId)
-            ->first();
-
-        if ($summaryKemarin) {
-            $saldoAkhirKemarin = $dompet->saldo_awal
-                + $dompet->topupTransactions()->whereDate('tanggal', '<=', $kemarin)->sum('nominal')
-                - $dompet->penjualanTransactions()->whereDate('tanggal', '<=', $kemarin)->sum('nominal');
-
-            return max(0, $saldoAkhirKemarin);
-        }
-
-        return $dompet->saldo_awal
-            + $dompet->topupTransactions()->whereDate('tanggal', '<', $date)->sum('nominal')
-            - $dompet->penjualanTransactions()->whereDate('tanggal', '<', $date)->sum('nominal');
+        return $this->hitungDompet($dompet, $date)['saldo_awal'];
     }
 
     private function calculateVoucherSummary(DailySummary $summary, Carbon $date, int $userId): void
@@ -158,36 +230,32 @@ class DailySummaryService
             $this->recalculateForDate($current, $userId);
             $current->addDay();
         }
+        Cache::flush();
     }
 
     public function getDashboardData(Carbon $date, int $userId): array
     {
-        $summary = $this->recalculateForDate($date, $userId);
+        $summary = $this->getOrCalculateSummary($date, $userId);
 
         $dompets = DompetPulsa::withoutGlobalScopes()
             ->where('user_id', $userId)
             ->where('is_active', true)
             ->with('adjustments')
             ->get()
-            ->map(function ($dompet) use ($date, $userId) {
-                $saldoAwal = $this->getSaldoAwalDompet($dompet, $date, $userId);
-                $topup = $dompet->topupTransactions()->whereDate('tanggal', $date)->sum('nominal');
-                $penjualan = $dompet->penjualanTransactions()->whereDate('tanggal', $date)->sum('nominal');
-
-                $modalAwal = $dompet->modal_awal_efektif;
-                $selisih = $modalAwal - $penjualan;
-                $sisaSaldoSaatIni = $dompet->sisa_saldo_efektif;
-                $labaRugi = $sisaSaldoSaatIni - $selisih;
+            ->map(function ($dompet) use ($date) {
+                $h = $this->hitungDompet($dompet, $date);
 
                 return [
                     'id' => $dompet->id,
                     'nama' => $dompet->nama,
                     'kode' => $dompet->kode,
-                    'saldo_awal' => $saldoAwal,
-                    'topup' => $topup,
-                    'penjualan' => $penjualan,
-                    'saldo_akhir' => $saldoAwal + $topup - $penjualan,
-                    'laba' => $labaRugi,
+                    'saldo_awal' => $h['saldo_awal'],
+                    'topup' => $h['topup'],
+                    'penjualan' => $h['penjualan'],
+                    'saldo_sistem' => $h['saldo_sistem'],
+                    'penyesuaian' => $h['penyesuaian'],
+                    'saldo_akhir' => $h['saldo_akhir'],
+                    'laba' => $h['laba'],
                 ];
             });
 

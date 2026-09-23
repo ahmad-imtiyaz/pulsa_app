@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\RecalculateDailySummaries;
 use App\Models\Aksesoris;
 use App\Models\AksesorisTransaction;
-use App\Models\DailySummary;
 use App\Models\DompetPulsa;
 use App\Models\DompetPulsaTransaction;
 use App\Models\Pengeluaran;
@@ -26,22 +26,25 @@ class ReportController extends Controller
         $startDate = $request->get('start_date', Carbon::today()->subDays(30)->toDateString());
         $endDate = $request->get('end_date', Carbon::today()->toDateString());
 
-        // Ensure daily summaries are calculated for the date range with explicitly passed Auth::id()
-        $this->summaryService->recalculateRange(
+        // Use cached summaries for immediate display
+        $summaries = $this->summaryService->getCachedRange(
             Carbon::parse($startDate),
             Carbon::parse($endDate),
             Auth::id()
         );
 
-        $summaries = DailySummary::whereBetween('tanggal', [$startDate, $endDate])
-            ->orderBy('tanggal', 'desc')
-            ->get();
+        // Queue background recalculation for freshness
+        RecalculateDailySummaries::dispatch(
+            Carbon::parse($startDate),
+            Carbon::parse($endDate),
+            Auth::id()
+        );
 
-        // Get detailed pengeluaran for the date range
+        // Get detailed pengeluaran for the date range with pagination
         $pengeluaran = Pengeluaran::whereBetween('tanggal', [$startDate, $endDate])
             ->orderBy('tanggal', 'desc')
             ->orderBy('created_at', 'desc')
-            ->get()
+            ->paginate(50)
             ->groupBy(function ($item) {
                 return $item->tanggal->format('Y-m-d');
             });
@@ -84,28 +87,28 @@ class ReportController extends Controller
 
         $userId = Auth::id();
 
-        // Pulsa sales (Isolasi data via relasi dompetPulsa)
+        // Pulsa sales (Isolasi data via relasi dompetPulsa) with pagination
         $pulsaSales = DompetPulsaTransaction::where('jenis', 'penjualan')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->whereHas('dompetPulsa', fn ($q) => $q->withoutGlobalScopes()->where('user_id', $userId))
             ->with('dompetPulsa')
             ->latest('tanggal')
-            ->get();
+            ->paginate(50);
 
-        // Voucher sales (Isolasi data via relasi voucher)
+        // Voucher sales (Isolasi data via relasi voucher) with pagination
         $voucherSales = VoucherTransaction::whereBetween('tanggal', [$startDate, $endDate])
             ->whereHas('voucher', fn ($q) => $q->withoutGlobalScopes()->where('user_id', $userId))
             ->with('voucher')
             ->latest('tanggal')
-            ->get();
+            ->paginate(50);
 
-        // Aksesoris sales (Isolasi data via relasi aksesoris)
+        // Aksesoris sales (Isolasi data via relasi aksesoris) with pagination
         $aksesorisSales = AksesorisTransaction::where('jenis', 'penjualan')
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->whereHas('aksesoris', fn ($q) => $q->withoutGlobalScopes()->where('user_id', $userId))
             ->with('aksesoris')
             ->latest('tanggal')
-            ->get();
+            ->paginate(50);
 
         return view('reports.penjualan', compact('pulsaSales', 'voucherSales', 'aksesorisSales', 'startDate', 'endDate'));
     }

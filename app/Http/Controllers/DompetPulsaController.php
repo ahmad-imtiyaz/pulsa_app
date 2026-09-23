@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\DompetPulsaRequest;
 use App\Http\Requests\DompetPulsaTransactionRequest;
+use App\Jobs\RecalculateDailySummaries;
 use App\Models\DompetPulsa;
 use App\Models\DompetPulsaAdjustment;
 use App\Models\DompetPulsaTransaction;
@@ -12,12 +13,20 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-
 class DompetPulsaController extends Controller
 {
     public function __construct(
         protected DailySummaryService $summaryService
     ) {}
+
+    private function queueRecalculateRange(): void
+    {
+        RecalculateDailySummaries::dispatch(
+            Carbon::today()->subDays(30),
+            Carbon::today()->addDays(30),
+            Auth::id()
+        );
+    }
 
     public function index()
     {
@@ -45,11 +54,7 @@ class DompetPulsaController extends Controller
             'keterangan' => $request->keterangan,
         ]);
 
-        $this->summaryService->recalculateRange(
-            Carbon::today()->subDays(30),
-            Carbon::today()->addDays(30),
-            Auth::id()
-        );
+        $this->queueRecalculateRange();
 
         return redirect()->route('dompet-pulsa.index')
             ->with('success', 'Dompet pulsa berhasil ditambahkan.');
@@ -101,11 +106,7 @@ class DompetPulsaController extends Controller
     {
         $dompetPulsa->update($request->validated());
 
-        $this->summaryService->recalculateRange(
-            Carbon::today()->subDays(30),
-            Carbon::today()->addDays(30),
-            Auth::id()
-        );
+        $this->queueRecalculateRange();
 
         return redirect()->route('dompet-pulsa.index')
             ->with('success', 'Dompet pulsa berhasil diperbarui.');
@@ -115,11 +116,7 @@ class DompetPulsaController extends Controller
     {
         $dompetPulsa->delete();
 
-        $this->summaryService->recalculateRange(
-            Carbon::today()->subDays(30),
-            Carbon::today()->addDays(30),
-            Auth::id()
-        );
+        $this->queueRecalculateRange();
 
         return redirect()->route('dompet-pulsa.index')
             ->with('success', 'Dompet pulsa berhasil dihapus.');
@@ -142,7 +139,11 @@ class DompetPulsaController extends Controller
             'tanggal' => $request->tanggal,
         ]);
 
-        $this->summaryService->recalculateForDate(Carbon::parse($request->tanggal), Auth::id());
+        RecalculateDailySummaries::dispatch(
+            Carbon::parse($request->tanggal),
+            Carbon::parse($request->tanggal),
+            Auth::id()
+        );
 
         return redirect()->route('dompet-pulsa.show', $dompetPulsa)
             ->with('success', 'Penyesuaian saldo berhasil disimpan.');
@@ -153,7 +154,11 @@ class DompetPulsaController extends Controller
         $tanggal = $adjustment->tanggal;
         $adjustment->delete();
 
-        $this->summaryService->recalculateForDate(Carbon::parse($tanggal), Auth::id());
+        RecalculateDailySummaries::dispatch(
+            Carbon::parse($tanggal),
+            Carbon::parse($tanggal),
+            Auth::id()
+        );
 
         return redirect()->route('dompet-pulsa.show', $dompetPulsa)
             ->with('success', 'Penyesuaian saldo berhasil dihapus.');
@@ -171,7 +176,11 @@ class DompetPulsaController extends Controller
 
         $transaction = DompetPulsaTransaction::create($data);
 
-        $this->summaryService->recalculateForDate(Carbon::parse($data['tanggal']), Auth::id());
+        RecalculateDailySummaries::dispatch(
+            Carbon::parse($data['tanggal']),
+            Carbon::parse($data['tanggal']),
+            Auth::id()
+        );
 
         return redirect()->route('dompet-pulsa.show', $dompetPulsa)
             ->with('success', 'Transaksi berhasil ditambahkan.');
@@ -188,7 +197,11 @@ class DompetPulsaController extends Controller
 
         $transaksi->update($data);
 
-        $this->summaryService->recalculateForDate(Carbon::parse($data['tanggal']), Auth::id());
+        RecalculateDailySummaries::dispatch(
+            Carbon::parse($data['tanggal']),
+            Carbon::parse($data['tanggal']),
+            Auth::id()
+        );
 
         return redirect()->route('dompet-pulsa.show', $dompetPulsa)
             ->with('success', 'Transaksi berhasil diperbarui.');
@@ -199,7 +212,11 @@ class DompetPulsaController extends Controller
         $tanggal = $transaksi->tanggal;
         $transaksi->delete();
 
-        $this->summaryService->recalculateForDate(Carbon::parse($tanggal), Auth::id());
+        RecalculateDailySummaries::dispatch(
+            Carbon::parse($tanggal),
+            Carbon::parse($tanggal),
+            Auth::id()
+        );
 
         return redirect()->route('dompet-pulsa.show', $dompetPulsa)
             ->with('success', 'Transaksi berhasil dihapus.');

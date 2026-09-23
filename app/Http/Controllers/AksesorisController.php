@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AksesorisRequest;
 use App\Http\Requests\AksesorisTransactionRequest;
+use App\Jobs\RecalculateDailySummaries;
 use App\Models\Aksesoris;
 use App\Models\AksesorisTransaction;
 use App\Services\DailySummaryService;
@@ -16,6 +17,20 @@ class AksesorisController extends Controller
     public function __construct(
         protected DailySummaryService $summaryService
     ) {}
+
+    private function queueRecalculateRange(): void
+    {
+        RecalculateDailySummaries::dispatch(
+            Carbon::today()->subDays(30),
+            Carbon::today()->addDays(30),
+            Auth::id()
+        );
+    }
+
+    private function queueRecalculateDate(Carbon $date): void
+    {
+        RecalculateDailySummaries::dispatch($date, $date, Auth::id());
+    }
 
     public function index(Request $request)
     {
@@ -65,11 +80,7 @@ class AksesorisController extends Controller
     {
         $aksesoris->update($request->validated());
 
-        $this->summaryService->recalculateRange(
-            Carbon::today()->subDays(30),
-            Carbon::today()->addDays(30),
-            Auth::id()
-        );
+        $this->queueRecalculateRange();
 
         return redirect()->route('aksesoris.index')
             ->with('success', 'Aksesoris berhasil diperbarui.');
@@ -79,11 +90,7 @@ class AksesorisController extends Controller
     {
         $aksesoris->delete();
 
-        $this->summaryService->recalculateRange(
-            Carbon::today()->subDays(30),
-            Carbon::today()->addDays(30),
-            Auth::id()
-        );
+        $this->queueRecalculateRange();
 
         return redirect()->route('aksesoris.index')
             ->with('success', 'Aksesoris berhasil dihapus.');
@@ -111,8 +118,7 @@ class AksesorisController extends Controller
 
         $transaction = AksesorisTransaction::create($data);
 
-        $this->summaryService->recalculateForDate(Carbon::parse($data['tanggal']), Auth::id());
-
+        $this->queueRecalculateDate(Carbon::parse($data['tanggal']));
 
         return redirect()->route('aksesoris.show', $aksesoris)
             ->with('success', 'Transaksi aksesoris berhasil ditambahkan.');
@@ -139,7 +145,7 @@ class AksesorisController extends Controller
 
         $transaksi->update($data);
 
-        $this->summaryService->recalculateForDate(Carbon::parse($data['tanggal']), Auth::id());
+        $this->queueRecalculateDate(Carbon::parse($data['tanggal']));
 
         return redirect()->route('aksesoris.show', $aksesoris)
             ->with('success', 'Transaksi aksesoris berhasil diperbarui.');
@@ -150,7 +156,7 @@ class AksesorisController extends Controller
         $tanggal = $transaksi->tanggal;
         $transaksi->delete();
 
-        $this->summaryService->recalculateForDate(Carbon::parse($tanggal), Auth::id());
+        $this->queueRecalculateDate(Carbon::parse($tanggal));
 
         return redirect()->route('aksesoris.show', $aksesoris)
             ->with('success', 'Transaksi aksesoris berhasil dihapus.');

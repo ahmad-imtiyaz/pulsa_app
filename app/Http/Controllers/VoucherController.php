@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\VoucherRequest;
 use App\Http\Requests\VoucherTransactionRequest;
+use App\Jobs\RecalculateDailySummaries;
 use App\Models\Voucher;
 use App\Models\VoucherTransaction;
 use App\Services\DailySummaryService;
@@ -11,12 +12,25 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-
 class VoucherController extends Controller
 {
     public function __construct(
         protected DailySummaryService $summaryService
     ) {}
+
+    private function queueRecalculateRange(): void
+    {
+        RecalculateDailySummaries::dispatch(
+            Carbon::today()->subDays(30),
+            Carbon::today()->addDays(30),
+            Auth::id()
+        );
+    }
+
+    private function queueRecalculateDate(Carbon $date): void
+    {
+        RecalculateDailySummaries::dispatch($date, $date, Auth::id());
+    }
 
     public function index(Request $request)
     {
@@ -66,11 +80,7 @@ class VoucherController extends Controller
     {
         $voucher->update($request->validated());
 
-        $this->summaryService->recalculateRange(
-            Carbon::today()->subDays(30),
-            Carbon::today()->addDays(30),
-            Auth::id()
-        );
+        $this->queueRecalculateRange();
 
         return redirect()->route('voucher.index')
             ->with('success', 'Voucher berhasil diperbarui.');
@@ -80,11 +90,7 @@ class VoucherController extends Controller
     {
         $voucher->delete();
 
-        $this->summaryService->recalculateRange(
-            Carbon::today()->subDays(30),
-            Carbon::today()->addDays(30),
-            Auth::id()
-        );
+        $this->queueRecalculateRange();
 
         return redirect()->route('voucher.index')
             ->with('success', 'Voucher berhasil dihapus.');
@@ -105,8 +111,7 @@ class VoucherController extends Controller
 
         VoucherTransaction::create($data);
 
-        $this->summaryService->recalculateForDate(Carbon::parse($data['tanggal']), Auth::id());
-
+        $this->queueRecalculateDate(Carbon::parse($data['tanggal']));
 
         return redirect()->route('voucher.show', $voucher)
             ->with('success', 'Transaksi voucher berhasil ditambahkan.');
@@ -126,7 +131,7 @@ class VoucherController extends Controller
 
         $transaksi->update($data);
 
-        $this->summaryService->recalculateForDate(Carbon::parse($data['tanggal']), Auth::id());
+        $this->queueRecalculateDate(Carbon::parse($data['tanggal']));
 
         return redirect()->route('voucher.show', $voucher)
             ->with('success', 'Transaksi voucher berhasil diperbarui.');
@@ -137,7 +142,7 @@ class VoucherController extends Controller
         $tanggal = $transaksi->tanggal;
         $transaksi->delete();
 
-        $this->summaryService->recalculateForDate(Carbon::parse($tanggal), Auth::id());
+        $this->queueRecalculateDate(Carbon::parse($tanggal));
 
         return redirect()->route('voucher.show', $voucher)
             ->with('success', 'Transaksi voucher berhasil dihapus.');
