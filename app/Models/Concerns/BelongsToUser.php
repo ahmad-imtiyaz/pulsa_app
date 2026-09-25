@@ -1,5 +1,7 @@
 <?php
+
 // app/Models/Concerns/BelongsToUser.php
+
 namespace App\Models\Concerns;
 
 use App\Models\Scopes\OwnedByUserScope;

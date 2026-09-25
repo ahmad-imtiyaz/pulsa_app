@@ -69,7 +69,7 @@ class PengeluaranController extends Controller
     {
         $pengeluaran->update($request->validated());
 
-       $this->summaryService->recalculateForDate(Carbon::parse($request->tanggal), Auth::id());
+        $this->summaryService->recalculateForDate(Carbon::parse($request->tanggal), Auth::id());
 
         return redirect()->route('pengeluaran.index')
             ->with('success', 'Pengeluaran berhasil diperbarui.');

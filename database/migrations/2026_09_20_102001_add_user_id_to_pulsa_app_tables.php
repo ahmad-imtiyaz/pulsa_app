@@ -1,4 +1,5 @@
 <?php
+
 // database/migrations/2026_09_20_000001_add_user_id_to_pulsa_app_tables.php
 
 use Illuminate\Database\Migrations\Migration;

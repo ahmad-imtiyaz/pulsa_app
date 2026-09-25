@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Aksesoris extends Model
 {
     /** @use HasFactory<AksesorisFactory> */
-    use HasFactory, BelongsToUser;
+    use BelongsToUser, HasFactory;
 
     protected $table = 'aksesoris';
 

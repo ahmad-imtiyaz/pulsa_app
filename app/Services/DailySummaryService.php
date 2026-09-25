@@ -54,37 +54,24 @@ class DailySummaryService
 
     public function getCachedSummary(Carbon $date, int $userId): ?DailySummary
     {
-        return Cache::remember(
-            $this->cacheKey($date, $userId),
-            now()->addHours(6),
-            fn () => DailySummary::withoutGlobalScopes()
-                ->where('tanggal', $date->toDateString())
-                ->where('user_id', $userId)
-                ->first()
-        );
+        return DailySummary::withoutGlobalScopes()
+            ->where('tanggal', $date->toDateString())
+            ->where('user_id', $userId)
+            ->first();
     }
 
     public function getOrCalculateSummary(Carbon $date, int $userId): DailySummary
     {
-        $cached = $this->getCachedSummary($date, $userId);
-        if ($cached) {
-            return $cached;
-        }
-
         return $this->recalculateForDate($date, $userId);
     }
 
     public function getCachedRange(Carbon $startDate, Carbon $endDate, int $userId): Collection
     {
-        $key = "daily_summaries_range_{$userId}_{$startDate->toDateString()}_{$endDate->toDateString()}";
-
-        return Cache::remember($key, now()->addHours(6), function () use ($startDate, $endDate, $userId) {
-            return DailySummary::withoutGlobalScopes()
-                ->whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
-                ->where('user_id', $userId)
-                ->orderBy('tanggal', 'desc')
-                ->get();
-        });
+        return DailySummary::withoutGlobalScopes()
+            ->whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
+            ->where('user_id', $userId)
+            ->orderBy('tanggal', 'desc')
+            ->get();
     }
 
     private function clearCacheForDate(Carbon $date, int $userId): void
@@ -122,30 +109,29 @@ class DailySummaryService
 
         $adjSebelum = $net($adjustments->filter(fn ($a) => $tglAdj($a) < $tgl));
         $adjHariIni = $net($adjustments->filter(fn ($a) => $tglAdj($a) === $tgl));
-        $adjSampaiTanggal = $net($adjustments->filter(fn ($a) => $tglAdj($a) <= $tgl));
 
         $topupSebelum = (float) $dompet->topupTransactions()->whereDate('tanggal', '<', $tgl)->sum('nominal');
-        $penjualanSebelum = (float) $dompet->penjualanTransactions()->whereDate('tanggal', '<', $tgl)->sum('nominal');
+        $modalSebelum = (float) $dompet->penjualanTransactions()->whereDate('tanggal', '<', $tgl)->sum('nominal');
 
         $topup = (float) $dompet->topupTransactions()->whereDate('tanggal', $tgl)->sum('nominal');
-        $penjualan = (float) $dompet->penjualanTransactions()->whereDate('tanggal', $tgl)->sum('nominal');
+        $penjualanHariIni = $dompet->penjualanTransactions()->whereDate('tanggal', $tgl);
+        $hargaModal = (float) (clone $penjualanHariIni)->sum('nominal');
+        $hargaJual = (float) (clone $penjualanHariIni)->sum('harga_jual');
 
-        $saldoAwal = (float) $dompet->saldo_awal + $topupSebelum - $penjualanSebelum + $adjSebelum;
-        $saldoSistem = $saldoAwal + $topup - $penjualan;
+        $saldoAwal = (float) $dompet->saldo_awal + $topupSebelum - $modalSebelum + $adjSebelum;
+        $saldoSistem = $saldoAwal + $topup - $hargaModal;
         $saldoAkhir = $saldoSistem + $adjHariIni;
 
-        // Historical laba/rugi: negatif kumulatif penjualan sebelum tanggal ini
-        // Matches test expectation: laba berbeda per tanggal, bukan saldo live
-        $labaRugi = -$penjualanSebelum;
-
         return [
+            'modal_awal' => (float) $dompet->saldo_awal,   // dikunci
             'saldo_awal' => $saldoAwal,
             'topup' => $topup,
-            'penjualan' => $penjualan,
+            'penjualan' => $hargaModal,                    // key lama dipertahankan agar view tidak pecah
+            'harga_jual' => $hargaJual,
             'saldo_sistem' => $saldoSistem,
             'penyesuaian' => $adjHariIni,
             'saldo_akhir' => $saldoAkhir,
-            'laba' => $labaRugi,
+            'laba' => $hargaJual - $hargaModal,            // laba murni per tanggal
         ];
     }
 

@@ -2,13 +2,13 @@
     <div class="space-y-6">
         <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900">Laporan Stok</h1>
-        
-        <!-- Sub-nav -->
-        <div class="flex space-x-4">
-            <a href="{{ route('laporan.index') }}" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg">Ringkasan</a>
-            <a href="{{ route('laporan.penjualan') }}" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg">Penjualan</a>
-            <a href="{{ route('laporan.stok') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Stok</a>
-        </div>
+
+            <!-- Sub-nav -->
+            <div class="flex space-x-4">
+                <a href="{{ route('laporan.index') }}" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg">Ringkasan</a>
+                <a href="{{ route('laporan.penjualan') }}" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg">Penjualan</a>
+                <a href="{{ route('laporan.stok') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Stok</a>
+            </div>
         </div>
 
         <!-- Dompet Pulsa Stok -->
@@ -16,7 +16,7 @@
             <div class="px-6 py-4 border-b border-gray-200 bg-blue-50">
                 <h2 class="text-lg font-semibold text-gray-900">Saldo Dompet Pulsa</h2>
             </div>
-            
+
             @if ($dompets->isEmpty())
                 <div class="p-12 text-center">
                     <p class="text-gray-500">Belum ada dompet pulsa</p>
@@ -30,7 +30,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Saldo Awal</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Topup</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Penjualan</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modal Terpakai</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Saldo Sekarang</th>
                             </tr>
                         </thead>
@@ -58,7 +58,7 @@
             <div class="px-6 py-4 border-b border-gray-200 bg-purple-50">
                 <h2 class="text-lg font-semibold text-gray-900">Stok Voucher</h2>
             </div>
-            
+
             @if ($vouchers->isEmpty())
                 <div class="p-12 text-center">
                     <p class="text-gray-500">Belum ada voucher</p>
@@ -100,7 +100,7 @@
             <div class="px-6 py-4 border-b border-gray-200 bg-indigo-50">
                 <h2 class="text-lg font-semibold text-gray-900">Stok Aksesoris</h2>
             </div>
-            
+
             @if ($aksesoris->isEmpty())
                 <div class="p-12 text-center">
                     <p class="text-gray-500">Belum ada aksesoris</p>

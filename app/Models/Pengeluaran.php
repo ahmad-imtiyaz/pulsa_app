@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class Pengeluaran extends Model
 {
     /** @use HasFactory<PengeluaranFactory> */
-    use HasFactory, BelongsToUser;
+    use BelongsToUser, HasFactory;
 
     protected $table = 'pengeluaran';
 

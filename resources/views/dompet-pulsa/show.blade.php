@@ -1,5 +1,5 @@
 <x-app-layout :title="'Detail Dompet Pulsa'">
-    <div class="space-y-6" x-data="{ openSaldoOverrideModal: false }">
+    <div class="space-y-6" x-data="{ openAdjustModal: false, openSaldoModal: false }">
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">{{ $dompetPulsa->nama }} ({{ $dompetPulsa->kode }})</h1>
@@ -12,47 +12,51 @@
             </div>
         </div>
 
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- Saldo -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <p class="text-sm text-gray-500">Modal Awal</p>
                 <p class="text-2xl font-bold text-gray-900 mt-1">Rp {{ number_format($modalAwal, 0, ',', '.') }}</p>
+                <p class="text-xs text-gray-400 mt-1">Tetap, tidak berubah oleh top up</p>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <p class="text-sm text-gray-500">Penjualan Hari Ini</p>
-                <p class="text-2xl font-bold text-red-600 mt-1">Rp {{ number_format($penjualanHariIni, 0, ',', '.') }}</p>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <p class="text-sm text-gray-500">Selisih</p>
-                <p class="text-2xl font-bold {{ $selisih >= 0 ? 'text-blue-600' : 'text-red-600' }} mt-1">Rp {{ number_format($selisih, 0, ',', '.') }}</p>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 relative">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-sm text-gray-500">Sisa Saldo Saat Ini</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">Rp {{ number_format($sisaSaldoEfektif, 0, ',', '.') }}</p>
-                        <p class="text-xs text-gray-400 mt-1">Formula: Rp {{ number_format($sisaSaldoDisesuaikan, 0, ',', '.') }}{{ ($dompetPulsa->saldo_delta ?? 0) != 0 ? ' (delta: ' . (($dompetPulsa->saldo_delta ?? 0) >= 0 ? '+' : '') . number_format($dompetPulsa->saldo_delta ?? 0, 0, ',', '.') . ')' : '' }}</p>
-                    </div>
-                    <button @click="openSaldoOverrideModal = true" class="text-gray-400 hover:text-blue-600 transition-colors" title="Edit Sisa Saldo">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                    </button>
-                </div>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <p class="text-sm text-gray-500">Laba / Rugi</p>
-                <p class="text-2xl font-bold {{ $labaRugi >= 0 ? 'text-green-600' : 'text-red-600' }} mt-1">Rp {{ number_format($labaRugi, 0, ',', '.') }}</p>
-            </div>
-        </div>
-
-        <!-- Additional Info Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <p class="text-sm text-gray-500">Saldo Awal (Hari Ini)</p>
                 <p class="text-2xl font-bold text-gray-900 mt-1">Rp {{ number_format($saldoAwal, 0, ',', '.') }}</p>
             </div>
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <p class="text-sm text-gray-500">Topup Hari Ini</p>
+                <p class="text-sm text-gray-500">Top Up Hari Ini</p>
                 <p class="text-2xl font-bold text-green-600 mt-1">Rp {{ number_format($topupHariIni, 0, ',', '.') }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500">Sisa Saldo Saat Ini</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">Rp {{ number_format($saldoAkhir, 0, ',', '.') }}</p>
+                    </div>
+                    <button type="button" @click="openSaldoModal = true" class="text-gray-400 hover:text-blue-600" title="Sesuaikan saldo">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Penjualan & laba -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <p class="text-sm text-gray-500">Harga Modal Terjual (Hari Ini)</p>
+                <p class="text-2xl font-bold text-red-600 mt-1">Rp {{ number_format($penjualanHariIni, 0, ',', '.') }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <p class="text-sm text-gray-500">Harga Jual (Hari Ini)</p>
+                <p class="text-2xl font-bold text-gray-900 mt-1">Rp {{ number_format($hargaJualHariIni, 0, ',', '.') }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <p class="text-sm text-gray-500">Laba / Rugi Hari Ini</p>
+                <p class="text-2xl font-bold {{ $labaHariIni >= 0 ? 'text-green-600' : 'text-red-600' }} mt-1">Rp {{ number_format($labaHariIni, 0, ',', '.') }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <p class="text-sm text-gray-500">Total Laba (Semua Tanggal)</p>
+                <p class="text-2xl font-bold {{ $labaTotal >= 0 ? 'text-green-600' : 'text-red-600' }} mt-1">Rp {{ number_format($labaTotal, 0, ',', '.') }}</p>
             </div>
         </div>
 
@@ -60,6 +64,7 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
             <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-gray-900">Penyesuaian Saldo</h2>
+                <button type="button" @click="openAdjustModal = true" class="text-sm text-blue-600 hover:text-blue-800">Tambah Penyesuaian</button>
             </div>
             @if($dompetPulsa->adjustments->isEmpty())
                 <div class="p-12 text-center">
@@ -112,7 +117,6 @@
 
             @if ($transactions->isEmpty())
                 <div class="p-12 text-center">
-                    <svg class="w-12 h-12 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 002-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                     <p class="text-gray-500">Belum ada transaksi</p>
                 </div>
             @else
@@ -122,13 +126,16 @@
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nominal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Modal / Topup</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laba</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterangan</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
                             @foreach ($transactions as $tx)
+                                @php $laba = $tx->jenis === 'penjualan' ? (float) $tx->harga_jual - (float) $tx->nominal : null; @endphp
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $tx->tanggal->format('d/m/Y') }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -137,6 +144,12 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-gray-900">Rp {{ number_format($tx->nominal, 0, ',', '.') }}</td>
+                                    <td class="px-6 py-4 text-gray-900">
+                                        {{ $tx->jenis === 'penjualan' ? 'Rp ' . number_format($tx->harga_jual ?? 0, 0, ',', '.') : '-' }}
+                                    </td>
+                                    <td class="px-6 py-4 font-medium {{ $laba === null ? 'text-gray-400' : ($laba >= 0 ? 'text-green-600' : 'text-red-600') }}">
+                                        {{ $laba === null ? '-' : 'Rp ' . number_format($laba, 0, ',', '.') }}
+                                    </td>
                                     <td class="px-6 py-4 text-gray-500">{{ $tx->keterangan ?? '-' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center space-x-2">
@@ -157,82 +170,81 @@
                 <div class="px-6 py-4 border-t border-gray-200">
                     {{ $transactions->links() }}
                 </div>
-@endif
+            @endif
         </div>
 
-        <!-- Saldo Delta Modal -->
+        <!-- Modal Tambah Penyesuaian -->
         <template x-teleport="body">
-        <div
-    x-show="openSaldoOverrideModal"
-    x-cloak
-    x-transition:enter="transition ease-out duration-200"
-    x-transition:enter-start="opacity-0 scale-95"
-    x-transition:enter-end="opacity-100 scale-100"
-    x-transition:leave="transition ease-in duration-150"
-    x-transition:leave-start="opacity-100 scale-100"
-    x-transition:leave-end="opacity-0 scale-95"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4"
-    @keydown.escape.window="openSaldoOverrideModal = false"
->
- <div class="flex items-center justify-center min-h-screen p-4">
-                <div class="fixed inset-0 bg-black bg-opacity-30 transition-opacity" @click="openSaldoOverrideModal = false"></div>
-                <div class="bg-white rounded-xl shadow-2xl w-full max-w-xs relative z-10" @click.stop>
+            <div x-show="openAdjustModal" x-cloak
+                 class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                 @keydown.escape.window="openAdjustModal = false">
+                <div class="fixed inset-0 bg-black bg-opacity-30" @click="openAdjustModal = false"></div>
+                <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm relative z-10" @click.stop>
                     <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                        <h3 class="font-semibold text-gray-900 text-sm">Edit Sisa Saldo</h3>
-                        <button @click="openSaldoOverrideModal = false" class="text-gray-400 hover:text-gray-600 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
+                        <h3 class="font-semibold text-gray-900 text-sm">Tambah Penyesuaian Saldo</h3>
+                        <button type="button" @click="openAdjustModal = false" class="text-gray-400 hover:text-gray-600">&times;</button>
                     </div>
-                    <form method="POST" action="{{ route('dompet-pulsa.saldo-override.update', $dompetPulsa) }}" class="p-4 space-y-3">
+                    <form method="POST" action="{{ route('dompet-pulsa.adjustments.store', $dompetPulsa) }}" class="p-4 space-y-3">
                         @csrf
-                        @method('PUT')
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Nilai Formula (tidak bisa diubah)</label>
-                            <div class="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-600 font-mono">
-                                Rp {{ number_format($sisaSaldoDisesuaikan, 0, ',', '.') }}
-                            </div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Jenis</label>
+                            <select name="jenis" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="tambah">Tambah saldo</option>
+                                <option value="kurang">Kurangi saldo</option>
+                            </select>
                         </div>
-                        <div x-data="{
-    rawValue: {{ $sisaSaldoDisesuaikan + ($dompetPulsa->saldo_delta ?? 0) }},
-    get formatted() {
-        return this.rawValue
-            ? new Intl.NumberFormat('id-ID').format(this.rawValue)
-            : '';
-    },
-    updateValue(e) {
-        let digits = e.target.value.replace(/\D/g, '');
-        this.rawValue = digits ? parseInt(digits, 10) : 0;
-        e.target.value = this.formatted;
-    }
-}">
-                            <label for="saldo_target" class="block text-xs font-medium text-gray-500 mb-1">Nilai Target (akan disimpan sebagai selisih dari formula)</label>
-                            <div class="relative">
-                                <input
-                                    type="text"
-                                    id="saldo_target"
-                                    inputmode="numeric"
-                                    x-model="formatted"
-                                    @input="updateValue"
-                                    class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                                    placeholder="Contoh: 1.500.000">
-                            </div>
-                            <p class="text-xs text-gray-400 mt-1">
-                                Selisih saat ini: 
-                                <span class="{{ ($dompetPulsa->saldo_delta ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }} font-mono">
-                                    {{ ($dompetPulsa->saldo_delta ?? 0) >= 0 ? '+' : '' }}{{ number_format($dompetPulsa->saldo_delta ?? 0, 0, ',', '.') }}
-                                </span>
-                                dari formula
-                            </p>
-                            <input type="hidden" name="saldo_delta" :value="rawValue">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Nominal</label>
+                            <input type="number" name="nominal" required min="0.01" step="any" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                         </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Tanggal</label>
+                            <input type="date" name="tanggal" required value="{{ now()->format('Y-m-d') }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Keterangan</label>
+                            <input type="text" name="keterangan" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Contoh: selisih saldo aplikasi">
+                        </div>
+                        <p class="text-xs text-gray-400">Penyesuaian hanya mengubah saldo, tidak mengubah laba.</p>
                         <div class="flex justify-end space-x-2 pt-1 border-t border-gray-100">
-                            <button type="button" @click="openSaldoOverrideModal = false" class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Batal</button>
+                            <button type="button" @click="openAdjustModal = false" class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Batal</button>
                             <button type="submit" class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">Simpan</button>
                         </div>
                     </form>
                 </div>
             </div>
-        </div>
+        </template>
+
+        <!-- Modal Override/Set Saldo Target -->
+        <template x-teleport="body">
+            <div x-show="openSaldoModal" x-cloak
+                 class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                 @keydown.escape.window="openSaldoModal = false">
+                <div class="fixed inset-0 bg-black bg-opacity-30" @click="openSaldoModal = false"></div>
+                <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm relative z-10" @click.stop>
+                    <div class="px-4 py-3 border-b border-gray-100">
+                        <h3 class="font-semibold text-gray-900 text-sm">Sesuaikan Sisa Saldo</h3>
+                    </div>
+                    <form method="POST" action="{{ route('dompet-pulsa.saldo-override.update', $dompetPulsa) }}" class="p-4 space-y-3">
+                        @csrf
+                        @method('PUT')
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Saldo menurut sistem</label>
+                            <div class="px-3 py-2 bg-gray-50 rounded-lg text-sm text-gray-600 font-mono">Rp {{ number_format($saldoAkhir, 0, ',', '.') }}</div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Saldo sebenarnya (di aplikasi provider)</label>
+                            <input type="number" name="saldo_target" required min="0" step="any"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Contoh: 990700">
+                        </div>
+                        <p class="text-xs text-gray-400">Selisihnya dicatat sebagai penyesuaian hari ini. Laba tidak berubah.</p>
+                        <div class="flex justify-end space-x-2 pt-1 border-t border-gray-100">
+                            <button type="button" @click="openSaldoModal = false" class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Batal</button>
+                            <button type="submit" class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">Simpan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </template>
     </div>
 </x-app-layout>

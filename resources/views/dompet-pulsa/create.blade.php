@@ -36,15 +36,7 @@
                 @error('saldo_awal')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
-                <p class="mt-1 text-sm text-gray-500">Saldo awal dompet pulsa ini</p>
-            </div>
-
-            <div>
-                <label for="sisa_saldo_awal" class="block text-sm font-medium text-gray-700 mb-1">Sisa Saldo Saat Ini</label>
-                <input type="number" name="sisa_saldo_awal" id="sisa_saldo_awal" value="{{ old('sisa_saldo_awal') }}" min="0" step="any"
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                       placeholder="Contoh: 900000 (nilai ini tetap, tidak berubah dari transaksi)">
-                <p class="mt-1 text-sm text-gray-500">Nilai ini diinput sekali di awal dan tetap digunakan untuk perhitungan Laba/Rugi, tidak berubah dari transaksi harian</p>
+                <p class="mt-1 text-sm text-gray-500">Modal awal dompet ini. Nilainya tetap; top up hanya menambah sisa saldo.</p>
             </div>
 
             <div>

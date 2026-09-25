@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class DailySummary extends Model
 {
     /** @use HasFactory<DailySummaryFactory> */
-    use HasFactory, BelongsToUser;
+    use BelongsToUser, HasFactory;
 
     protected $table = 'daily_summaries';
 

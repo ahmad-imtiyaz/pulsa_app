@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToUser; // <-- Baris Tambahan 1
+use App\Models\Concerns\BelongsToUser;
 use Database\Factories\DompetPulsaFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class DompetPulsa extends Model
 {
     /** @use HasFactory<DompetPulsaFactory> */
-    use HasFactory, BelongsToUser; // <-- Baris Tambahan 2 (Tambahkan BelongsToUser di sini)
+    use BelongsToUser, HasFactory;
 
     protected $table = 'dompet_pulsa';
 
@@ -56,23 +56,24 @@ class DompetPulsa extends Model
 
     public function getTotalTopupAttribute(): float
     {
-        return $this->topupTransactions()->sum('nominal');
+        return (float) $this->topupTransactions()->sum('nominal');
     }
 
+    /** Total harga modal semua penjualan (saldo yang terpakai). */
     public function getTotalPenjualanAttribute(): float
     {
-        return $this->penjualanTransactions()->sum('nominal');
+        return (float) $this->penjualanTransactions()->sum('nominal');
     }
 
     public function getModalAwalEfektifAttribute(): float
     {
-        // Modal Awal sekarang tumbuh mengikuti Top Up, bukan lagi statis
-        return $this->saldo_awal + $this->total_topup;
+        // Modal Awal dikunci: tidak dipengaruhi topup
+        return (float) $this->saldo_awal;
     }
 
     public function hitungSaldoTersedia(): float
     {
-        return $this->saldo_awal + $this->total_topup - $this->total_penjualan;
+        return (float) $this->saldo_awal + $this->total_topup - $this->total_penjualan;
     }
 
     public function getAdjustmentSumAttribute(): float
@@ -92,7 +93,8 @@ class DompetPulsa extends Model
 
     public function getSisaSaldoEfektifAttribute(): float
     {
-        return $this->sisa_saldo_disesuaikan + ($this->saldo_delta ?? 0);
+        // saldo_delta tidak dipakai lagi
+        return $this->sisa_saldo_disesuaikan;
     }
 
     public function getSisaSaldoAwalAttribute(?float $value): float

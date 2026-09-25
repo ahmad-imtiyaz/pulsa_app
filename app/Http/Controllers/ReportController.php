@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\RecalculateDailySummaries;
 use App\Models\Aksesoris;
 use App\Models\AksesorisTransaction;
 use App\Models\DompetPulsa;
@@ -23,22 +22,26 @@ class ReportController extends Controller
 
     public function index(Request $request)
     {
+        // Validasi input tanggal, membatasi rentang maksimal 92 hari (~3 bulan)
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
         $startDate = $request->get('start_date', Carbon::today()->subDays(30)->toDateString());
         $endDate = $request->get('end_date', Carbon::today()->toDateString());
 
-        // Use cached summaries for immediate display
-        $summaries = $this->summaryService->getCachedRange(
-            Carbon::parse($startDate),
-            Carbon::parse($endDate),
-            Auth::id()
-        );
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
 
-        // Queue background recalculation for freshness
-        RecalculateDailySummaries::dispatch(
-            Carbon::parse($startDate),
-            Carbon::parse($endDate),
-            Auth::id()
-        );
+        // Batasi rentang maksimal agar tidak terjadi performance bottleneck saat sinkronisasi
+        if ($start->diffInDays($end) > 92) {
+            return back()->withErrors(['start_date' => 'Rentang tanggal maksimal adalah 92 hari (3 bulan).']);
+        }
+
+        // Hitung ulang secara sinkron sebelum mengambil data cache
+        $this->summaryService->recalculateRange($start, $end, Auth::id());
+        $summaries = $this->summaryService->getCachedRange($start, $end, Auth::id());
 
         // Get detailed pengeluaran for the date range with pagination
         $pengeluaran = Pengeluaran::whereBetween('tanggal', [$startDate, $endDate])
@@ -62,18 +65,24 @@ class ReportController extends Controller
             'sisa_laba' => $summaries->sum('sisa_laba'),
         ];
 
-        // Per dompet pulsa report
+        // Per dompet pulsa report (Memisahkan harga modal, harga jual, dan laba)
         $dompets = DompetPulsa::where('is_active', true)->get()->map(function ($dompet) use ($startDate, $endDate) {
             $transactions = $dompet->penjualanTransactions()
-                ->whereBetween('tanggal', [$startDate, $endDate])
+                ->whereDate('tanggal', '>=', $startDate)
+                ->whereDate('tanggal', '<=', $endDate)
                 ->get();
+
+            $modal = (float) $transactions->sum('nominal');
+            $jual = (float) $transactions->sum('harga_jual');
 
             return [
                 'id' => $dompet->id,
                 'nama' => $dompet->nama,
                 'kode' => $dompet->kode,
-                'total_penjualan' => $transactions->sum('nominal'),
                 'transaksi_count' => $transactions->count(),
+                'total_modal' => $modal,
+                'total_jual' => $jual,
+                'laba' => $jual - $modal,
             ];
         });
 
@@ -115,20 +124,26 @@ class ReportController extends Controller
 
     public function stok(Request $request)
     {
-        $dompets = DompetPulsa::where('is_active', true)->get()->map(function ($dompet) {
-            $saldoAwal = $this->summaryService->getSaldoAwalDompet($dompet, Carbon::today(), Auth::id());
-            $topup = $dompet->topupTransactions()->where('tanggal', '<=', Carbon::today())->sum('nominal');
-            $penjualan = $dompet->penjualanTransactions()->where('tanggal', '<=', Carbon::today())->sum('nominal');
+        $dompets = DompetPulsa::where('is_active', true)
+            ->with('adjustments')
+            ->get()
+            ->map(function ($dompet) {
+                $latestTxDate = $dompet->transactions()->latest('tanggal')->value('tanggal');
+                $targetDate = $latestTxDate ? Carbon::parse($latestTxDate) : Carbon::today();
+                $h = $this->summaryService->hitungDompet($dompet, $targetDate);
 
-            return [
-                'nama' => $dompet->nama,
-                'kode' => $dompet->kode,
-                'saldo_awal' => $dompet->saldo_awal,
-                'total_topup' => $topup,
-                'total_penjualan' => $penjualan,
-                'saldo_sekarang' => $saldoAwal + $topup - $penjualan,
-            ];
-        });
+                $topupBefore = (float) $dompet->topupTransactions()->whereDate('tanggal', '<', $targetDate)->sum('nominal');
+                $penjualanBefore = (float) $dompet->penjualanTransactions()->whereDate('tanggal', '<', $targetDate)->sum('nominal');
+
+                return [
+                    'nama' => $dompet->nama,
+                    'kode' => $dompet->kode,
+                    'saldo_awal' => (float) $dompet->saldo_awal,
+                    'total_topup' => $h['topup'] + $topupBefore,
+                    'total_penjualan' => $h['penjualan'] + $penjualanBefore,
+                    'saldo_sekarang' => $h['saldo_akhir'],
+                ];
+            });
 
         $vouchers = Voucher::where('status', 'aktif')->get()->map(function ($voucher) {
             return [

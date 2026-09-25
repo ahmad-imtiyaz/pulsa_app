@@ -2,13 +2,13 @@
     <div class="space-y-6">
         <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900">Laporan Keuangan</h1>
-        
-        <!-- Sub-nav -->
-        <div class="flex space-x-4">
-            <a href="{{ route('laporan.index') }}" class="px-4 py-2 {{ request()->routeIs('laporan.index') ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300' }} rounded-lg">Ringkasan</a>
-            <a href="{{ route('laporan.penjualan') }}" class="px-4 py-2 {{ request()->routeIs('laporan.penjualan') ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300' }} rounded-lg">Penjualan</a>
-            <a href="{{ route('laporan.stok') }}" class="px-4 py-2 {{ request()->routeIs('laporan.stok') ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300' }} rounded-lg">Stok</a>
-        </div>
+
+            <!-- Sub-nav -->
+            <div class="flex space-x-4">
+                <a href="{{ route('laporan.index') }}" class="px-4 py-2 {{ request()->routeIs('laporan.index') ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300' }} rounded-lg">Ringkasan</a>
+                <a href="{{ route('laporan.penjualan') }}" class="px-4 py-2 {{ request()->routeIs('laporan.penjualan') ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300' }} rounded-lg">Penjualan</a>
+                <a href="{{ route('laporan.stok') }}" class="px-4 py-2 {{ request()->routeIs('laporan.stok') ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300' }} rounded-lg">Stok</a>
+            </div>
         </div>
 
         <!-- Date filter -->
@@ -70,7 +70,7 @@
             <div class="px-6 py-4 border-b border-gray-200">
                 <h2 class="text-lg font-semibold text-gray-900">Ringkasan Harian</h2>
             </div>
-            
+
             @if ($summaries->isEmpty())
                 <div class="p-12 text-center">
                     <p class="text-gray-500">Belum ada data</p>
@@ -139,8 +139,8 @@
                                     <tr class="hover:bg-gray-50">
                                         <td class="px-6 py-4 whitespace-nowrap">{{ $item->tanggal->format('d/m/Y') }}</td>
                                         <td class="px-6 py-4">
-                                            <span class="px-2 py-1 text-xs font-medium rounded-full 
-                                                {{ $item->kategori === 'operasional' ? 'bg-yellow-100 text-yellow-800' : 
+                                            <span class="px-2 py-1 text-xs font-medium rounded-full
+                                                {{ $item->kategori === 'operasional' ? 'bg-yellow-100 text-yellow-800' :
                                                    ($item->kategori === 'gaji' ? 'bg-purple-100 text-purple-800' : 'bg-pink-100 text-pink-800') }}">
                                                 {{ ucfirst($item->kategori === 'pribadi' ? 'Pengambilan Pribadi' : ($item->kategori === 'gaji' ? 'Gaji Karyawan' : 'Operasional')) }}
                                             </span>
@@ -162,7 +162,7 @@
             <div class="px-6 py-4 border-b border-gray-200">
                 <h2 class="text-lg font-semibold text-gray-900">Per Dompet Pulsa</h2>
             </div>
-            
+
             @if ($dompets->isEmpty())
                 <div class="p-12 text-center">
                     <p class="text-gray-500">Belum ada data</p>
@@ -175,7 +175,9 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kode</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Transaksi</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Penjualan</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Modal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laba</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
@@ -184,7 +186,11 @@
                                     <td class="px-6 py-4 font-medium text-gray-900">{{ $dompet['nama'] }}</td>
                                     <td class="px-6 py-4 text-gray-900">{{ $dompet['kode'] }}</td>
                                     <td class="px-6 py-4 text-gray-900">{{ $dompet['transaksi_count'] }}</td>
-                                    <td class="px-6 py-4 text-gray-900">Rp {{ number_format($dompet['total_penjualan'], 0, ',', '.') }}</td>
+                                    <td class="px-6 py-4 text-gray-900">Rp {{ number_format($dompet['total_modal'], 0, ',', '.') }}</td>
+                                    <td class="px-6 py-4 text-gray-900">Rp {{ number_format($dompet['total_jual'], 0, ',', '.') }}</td>
+                                    <td class="px-6 py-4 font-medium {{ $dompet['laba'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                        Rp {{ number_format($dompet['laba'], 0, ',', '.') }}
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>

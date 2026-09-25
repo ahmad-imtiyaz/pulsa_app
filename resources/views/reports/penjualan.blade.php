@@ -2,13 +2,13 @@
     <div class="space-y-6">
         <div class="flex items-center justify-between">
             <h1 class="text-2xl font-bold text-gray-900">Laporan Penjualan</h1>
-        
-        <!-- Sub-nav -->
-        <div class="flex space-x-4">
-            <a href="{{ route('laporan.index') }}" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg">Ringkasan</a>
-            <a href="{{ route('laporan.penjualan') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Penjualan</a>
-            <a href="{{ route('laporan.stok') }}" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg">Stok</a>
-        </div>
+
+            <!-- Sub-nav -->
+            <div class="flex space-x-4">
+                <a href="{{ route('laporan.index') }}" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg">Ringkasan</a>
+                <a href="{{ route('laporan.penjualan') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg">Penjualan</a>
+                <a href="{{ route('laporan.stok') }}" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg">Stok</a>
+            </div>
         </div>
 
         <!-- Date filter -->
@@ -31,7 +31,7 @@
             <div class="px-6 py-4 border-b border-gray-200 bg-blue-50">
                 <h2 class="text-lg font-semibold text-gray-900">Penjualan Pulsa</h2>
             </div>
-            
+
             @if ($pulsaSales->isEmpty())
                 <div class="p-12 text-center">
                     <p class="text-gray-500">Tidak ada data penjualan pulsa</p>
@@ -43,15 +43,22 @@
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dompet</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Penjualan Hari Ini</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Modal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Laba</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Keterangan</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
                             @foreach ($pulsaSales as $tx)
+                                @php $laba = (float) $tx->harga_jual - (float) $tx->nominal; @endphp
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4 whitespace-nowrap">{{ $tx->tanggal->format('d/m/Y') }}</td>
                                     <td class="px-6 py-4 font-medium text-gray-900">{{ $tx->dompetPulsa->nama }}</td>
                                     <td class="px-6 py-4 text-gray-900">Rp {{ number_format($tx->nominal, 0, ',', '.') }}</td>
+                                    <td class="px-6 py-4 text-gray-900">Rp {{ number_format($tx->harga_jual ?? 0, 0, ',', '.') }}</td>
+                                    <td class="px-6 py-4 font-medium {{ $laba >= 0 ? 'text-green-600' : 'text-red-600' }}">Rp {{ number_format($laba, 0, ',', '.') }}</td>
+                                    <td class="px-6 py-4 text-gray-500">{{ $tx->keterangan ?? '-' }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -65,7 +72,7 @@
             <div class="px-6 py-4 border-b border-gray-200 bg-purple-50">
                 <h2 class="text-lg font-semibold text-gray-900">Penjualan Voucher</h2>
             </div>
-            
+
             @if ($voucherSales->isEmpty())
                 <div class="p-12 text-center">
                     <p class="text-gray-500">Tidak ada data penjualan voucher</p>
@@ -109,7 +116,7 @@
             <div class="px-6 py-4 border-b border-gray-200 bg-indigo-50">
                 <h2 class="text-lg font-semibold text-gray-900">Penjualan Aksesoris</h2>
             </div>
-            
+
             @if ($aksesorisSales->isEmpty())
                 <div class="p-12 text-center">
                     <p class="text-gray-500">Tidak ada data penjualan aksesoris</p>

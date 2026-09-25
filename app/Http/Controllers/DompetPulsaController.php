@@ -28,11 +28,30 @@ class DompetPulsaController extends Controller
         );
     }
 
+    /** Hitung ulang dari $dari sampai hari ini (saldo terbawa ke hari-hari berikutnya). */
+    private function queueRecalculateFrom($dari): void
+    {
+        $dari = Carbon::parse($dari);
+        $sampai = $dari->gt(Carbon::today()) ? $dari->copy() : Carbon::today();
+
+        RecalculateDailySummaries::dispatch($dari, $sampai, Auth::id());
+    }
+
     public function index()
     {
         $dompets = DompetPulsa::with(['transactions' => function ($q) {
             $q->latest('tanggal')->limit(5);
-        }])->get();
+        }, 'adjustments'])->get()
+            ->map(function ($dompet) {
+                $latestTxDate = $dompet->transactions()->latest('tanggal')->value('tanggal');
+                $targetDate = $latestTxDate ? Carbon::parse($latestTxDate) : Carbon::today();
+                $h = $this->summaryService->hitungDompet($dompet, $targetDate);
+
+                return [
+                    'dompet' => $dompet,
+                    'saldo_sekarang' => $h['saldo_akhir'],
+                ];
+            });
 
         return view('dompet-pulsa.index', compact('dompets'));
     }
@@ -44,11 +63,11 @@ class DompetPulsaController extends Controller
 
     public function store(DompetPulsaRequest $request)
     {
-        $dompet = DompetPulsa::create([
+        DompetPulsa::create([
             'nama' => $request->nama,
             'kode' => $request->kode,
             'saldo_awal' => $request->saldo_awal,
-            'sisa_saldo_awal' => $request->sisa_saldo_awal ?? $request->saldo_awal,
+            'sisa_saldo_awal' => $request->saldo_awal, // kolom lama, tidak dipakai rumus
             'saldo_tersedia' => $request->saldo_awal,
             'is_active' => $request->boolean('is_active', true),
             'keterangan' => $request->keterangan,
@@ -67,34 +86,44 @@ class DompetPulsaController extends Controller
             ->latest('tanggal')
             ->paginate(20);
 
-        $saldoAwal = $this->summaryService->getSaldoAwalDompet($dompetPulsa, Carbon::today(), Auth::id());
-        $topupHariIni = $dompetPulsa->topupTransactions()->where('tanggal', Carbon::today())->sum('nominal');
-        $penjualanHariIni = $dompetPulsa->penjualanTransactions()->where('tanggal', Carbon::today())->sum('nominal');
-        $saldoAkhir = $saldoAwal + $topupHariIni - $penjualanHariIni;
+        // Hitung saldo sampai tanggal transaksi terakhir (bukan hari ini)
+        // supaya "Saldo Sekarang" konsisten dengan index & laporan stok
+        $latestTxDate = $dompetPulsa->transactions()->latest('tanggal')->value('tanggal');
+        $targetDate = $latestTxDate ? Carbon::parse($latestTxDate) : Carbon::today();
 
-        $modalAwal = $dompetPulsa->modal_awal_efektif;
-        $selisih = $modalAwal - $penjualanHariIni;
+        $h = $this->summaryService->hitungDompet($dompetPulsa, $targetDate);
 
-        $sisaSaldoSaatIni = $dompetPulsa->sisa_saldo_efektif;
-        $sisaSaldoDisesuaikan = $dompetPulsa->sisa_saldo_disesuaikan;
-        $sisaSaldoEfektif = $dompetPulsa->sisa_saldo_efektif;
+        $penjualan = $dompetPulsa->penjualanTransactions();
+        $labaTotal = (float) (clone $penjualan)->sum('harga_jual') - (float) (clone $penjualan)->sum('nominal');
 
-        $labaRugi = $sisaSaldoSaatIni - $selisih;
+        // Untuk card "Hari Ini" tetap pakai hari ini
+        $hToday = $this->summaryService->hitungDompet($dompetPulsa, Carbon::today());
 
-        return view('dompet-pulsa.show', compact(
-            'dompetPulsa',
-            'transactions',
-            'saldoAwal',
-            'topupHariIni',
-            'penjualanHariIni',
-            'saldoAkhir',
-            'modalAwal',
-            'selisih',
-            'sisaSaldoSaatIni',
-            'sisaSaldoDisesuaikan',
-            'sisaSaldoEfektif',
-            'labaRugi'
-        ));
+        return view('dompet-pulsa.show', [
+            'dompetPulsa' => $dompetPulsa,
+            'transactions' => $transactions,
+
+            // Saldo terkini (sampai transaksi terakhir) - untuk "Sisa Saldo Saat Ini"
+            'saldoAkhir' => $h['saldo_akhir'],
+            'modalAwal' => $h['modal_awal'],
+
+            // Angka hari ini (untuk card "Top Up Hari Ini", "Penjualan Hari Ini", dll)
+            'saldoAwal' => $hToday['saldo_awal'],
+            'topupHariIni' => $hToday['topup'],
+            'penjualanHariIni' => $hToday['penjualan'],
+            'hargaJualHariIni' => $hToday['harga_jual'],
+            'labaHariIni' => $hToday['laba'],
+
+            // Kumulatif semua tanggal
+            'labaTotal' => $labaTotal,
+
+            // nama lama, dipertahankan agar view tidak error
+            'sisaSaldoSaatIni' => $h['saldo_akhir'],
+            'sisaSaldoDisesuaikan' => $h['saldo_akhir'],
+            'sisaSaldoEfektif' => $h['saldo_akhir'],
+            'selisih' => 0,
+            'labaRugi' => $hToday['laba'],
+        ]);
     }
 
     public function edit(DompetPulsa $dompetPulsa)
@@ -139,11 +168,7 @@ class DompetPulsaController extends Controller
             'tanggal' => $request->tanggal,
         ]);
 
-        RecalculateDailySummaries::dispatch(
-            Carbon::parse($request->tanggal),
-            Carbon::parse($request->tanggal),
-            Auth::id()
-        );
+        $this->queueRecalculateFrom($request->tanggal);
 
         return redirect()->route('dompet-pulsa.show', $dompetPulsa)
             ->with('success', 'Penyesuaian saldo berhasil disimpan.');
@@ -154,11 +179,7 @@ class DompetPulsaController extends Controller
         $tanggal = $adjustment->tanggal;
         $adjustment->delete();
 
-        RecalculateDailySummaries::dispatch(
-            Carbon::parse($tanggal),
-            Carbon::parse($tanggal),
-            Auth::id()
-        );
+        $this->queueRecalculateFrom($tanggal);
 
         return redirect()->route('dompet-pulsa.show', $dompetPulsa)
             ->with('success', 'Penyesuaian saldo berhasil dihapus.');
@@ -171,16 +192,12 @@ class DompetPulsaController extends Controller
 
     public function storeTransaction(DompetPulsaTransactionRequest $request, DompetPulsa $dompetPulsa)
     {
-        $data = $request->validated();
+        $data = $this->normalisasiTransaksi($request->validated());
         $data['dompet_pulsa_id'] = $dompetPulsa->id;
 
-        $transaction = DompetPulsaTransaction::create($data);
+        DompetPulsaTransaction::create($data);
 
-        RecalculateDailySummaries::dispatch(
-            Carbon::parse($data['tanggal']),
-            Carbon::parse($data['tanggal']),
-            Auth::id()
-        );
+        $this->queueRecalculateFrom($data['tanggal']);
 
         return redirect()->route('dompet-pulsa.show', $dompetPulsa)
             ->with('success', 'Transaksi berhasil ditambahkan.');
@@ -193,15 +210,13 @@ class DompetPulsaController extends Controller
 
     public function updateTransaction(DompetPulsaTransactionRequest $request, DompetPulsa $dompetPulsa, DompetPulsaTransaction $transaksi)
     {
-        $data = $request->validated();
+        $tanggalLama = Carbon::parse($transaksi->tanggal);
+        $data = $this->normalisasiTransaksi($request->validated());
 
         $transaksi->update($data);
 
-        RecalculateDailySummaries::dispatch(
-            Carbon::parse($data['tanggal']),
-            Carbon::parse($data['tanggal']),
-            Auth::id()
-        );
+        // tanggal bisa berubah: hitung ulang dari yang paling awal
+        $this->queueRecalculateFrom($tanggalLama->min(Carbon::parse($data['tanggal'])));
 
         return redirect()->route('dompet-pulsa.show', $dompetPulsa)
             ->with('success', 'Transaksi berhasil diperbarui.');
@@ -212,11 +227,7 @@ class DompetPulsaController extends Controller
         $tanggal = $transaksi->tanggal;
         $transaksi->delete();
 
-        RecalculateDailySummaries::dispatch(
-            Carbon::parse($tanggal),
-            Carbon::parse($tanggal),
-            Auth::id()
-        );
+        $this->queueRecalculateFrom($tanggal);
 
         return redirect()->route('dompet-pulsa.show', $dompetPulsa)
             ->with('success', 'Transaksi berhasil dihapus.');
@@ -225,18 +236,84 @@ class DompetPulsaController extends Controller
     public function updateSaldoOverride(Request $request, DompetPulsa $dompetPulsa)
     {
         $request->validate([
-            'saldo_delta' => 'nullable|numeric',
+            'saldo_target' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $formulaValue = $dompetPulsa->sisa_saldo_disesuaikan;
-        $inputValue = $request->saldo_delta !== '' ? $request->saldo_delta : $formulaValue;
-        $delta = $inputValue - $formulaValue;
+        $hari = Carbon::today();
+        $dompetPulsa->load('adjustments');
 
-        $dompetPulsa->update([
-            'saldo_delta' => $delta,
+        $h = $this->summaryService->hitungDompet($dompetPulsa, $hari);
+        $selisih = round((float) $request->saldo_target - $h['saldo_akhir'], 2);
+
+        if (abs($selisih) < 0.01) {
+            return redirect()->route('dompet-pulsa.show', $dompetPulsa)
+                ->with('success', 'Saldo sudah sama, tidak ada yang perlu disesuaikan.');
+        }
+
+        DompetPulsaAdjustment::create([
+            'dompet_pulsa_id' => $dompetPulsa->id,
+            'jenis' => $selisih > 0 ? 'tambah' : 'kurang',
+            'nominal' => abs($selisih),
+            'keterangan' => 'Koreksi saldo sesuai aplikasi',
+            'tanggal' => $hari->toDateString(),
         ]);
+
+        $this->queueRecalculateFrom($hari);
 
         return redirect()->route('dompet-pulsa.show', $dompetPulsa)
-            ->with('success', 'Sisa saldo berhasil diperbarui.');
+            ->with('success', 'Sisa saldo disesuaikan.');
+    }
+
+    /**
+     * Laporan Stok / Ringkasan Saldo
+     * Menggunakan saldo_akhir dari DailySummaryService untuk menghindari double-counting mutasi lampau.
+     */
+    public function stok()
+    {
+        $hari = Carbon::today();
+
+        $dompets = DompetPulsa::where('is_active', true)
+            ->with('adjustments')
+            ->get()
+            ->map(function ($dompet) use ($hari) {
+                $h = $this->summaryService->hitungDompet($dompet, $hari);
+
+                $topup = (float) $dompet->topupTransactions()
+                    ->whereDate('tanggal', '<=', $hari)
+                    ->sum('nominal');
+
+                $penjualan = (float) $dompet->penjualanTransactions()
+                    ->whereDate('tanggal', '<=', $hari)
+                    ->sum('nominal');
+
+                return [
+                    'nama' => $dompet->nama,
+                    'kode' => $dompet->kode,
+                    'saldo_awal' => (float) $dompet->saldo_awal,
+                    'total_topup' => $topup,
+                    'total_penjualan' => $penjualan, // total harga modal terpakai
+                    'penyesuaian' => $h['saldo_akhir'] - ((float) $dompet->saldo_awal + $topup - $penjualan),
+                    'saldo_sekarang' => $h['saldo_akhir'], // konsisten dengan dashboard
+                ];
+            });
+
+        return view('reports.stok', compact('dompets'));
+    }
+
+    /**
+     * nominal = harga modal (saldo yang terpotong untuk penjualan) atau jumlah topup.
+     * Laba selalu dihitung di server, apa pun yang dikirim form.
+     */
+    private function normalisasiTransaksi(array $data): array
+    {
+        if ($data['jenis'] === 'penjualan') {
+            $data['harga_jual'] = (float) $data['harga_jual'];
+            $data['laba'] = $data['harga_jual'] - (float) $data['nominal'];
+        } else {
+            $data['harga_jual'] = null;
+            $data['laba'] = null;
+        }
+
+        return $data;
     }
 }

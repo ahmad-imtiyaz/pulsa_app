@@ -28,28 +28,28 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
-                        @foreach ($dompets as $dompet)
+                        @foreach ($dompets as $item)
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4">
-                                    <div class="font-medium text-gray-900">{{ $dompet->nama }}</div>
+                                    <div class="font-medium text-gray-900">{{ $item['dompet']->nama }}</div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">{{ $dompet->kode }}</span>
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">{{ $item['dompet']->kode }}</span>
                                 </td>
-                                <td class="px-6 py-4 text-gray-900">Rp {{ number_format($dompet->saldo_awal, 0, ',', '.') }}</td>
-                                <td class="px-6 py-4 font-medium text-gray-900">Rp {{ number_format($dompet->hitungSaldoTersedia(), 0, ',', '.') }}</td>
-                                <td class="px-6 py-4 text-green-600">Rp {{ number_format($dompet->total_topup, 0, ',', '.') }}</td>
-                                <td class="px-6 py-4 text-red-600">Rp {{ number_format($dompet->total_penjualan, 0, ',', '.') }}</td>
+                                <td class="px-6 py-4 text-gray-900">Rp {{ number_format($item['dompet']->saldo_awal, 0, ',', '.') }}</td>
+                                <td class="px-6 py-4 font-medium text-gray-900">Rp {{ number_format($item['saldo_sekarang'], 0, ',', '.') }}</td>
+                                <td class="px-6 py-4 text-green-600">Rp {{ number_format($item['dompet']->total_topup, 0, ',', '.') }}</td>
+                                <td class="px-6 py-4 text-red-600">Rp {{ number_format($item['dompet']->total_penjualan, 0, ',', '.') }}</td>
                                 <td class="px-6 py-4">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full {{ $dompet->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                        {{ $dompet->is_active ? 'Aktif' : 'Nonaktif' }}
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full {{ $item['dompet']->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                        {{ $item['dompet']->is_active ? 'Aktif' : 'Nonaktif' }}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center space-x-2">
-                                        <a href="{{ route('dompet-pulsa.show', $dompet) }}" class="text-blue-600 hover:text-blue-900 text-sm font-medium">Detail</a>
-                                        <a href="{{ route('dompet-pulsa.edit', $dompet) }}" class="text-gray-600 hover:text-gray-900 text-sm font-medium">Edit</a>
-                                        <form method="POST" action="{{ route('dompet-pulsa.destroy', $dompet) }}" class="inline" onsubmit="return confirm('Yakin hapus dompet ini?')">
+                                        <a href="{{ route('dompet-pulsa.show', $item['dompet']) }}" class="text-blue-600 hover:text-blue-900 text-sm font-medium">Detail</a>
+                                        <a href="{{ route('dompet-pulsa.edit', $item['dompet']) }}" class="text-gray-600 hover:text-gray-900 text-sm font-medium">Edit</a>
+                                        <form method="POST" action="{{ route('dompet-pulsa.destroy', $item['dompet']) }}" class="inline" onsubmit="return confirm('Yakin hapus dompet ini?')">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="text-red-600 hover:text-red-900 text-sm font-medium">Hapus</button>

@@ -18,6 +18,7 @@ class DompetPulsaTransactionRequest extends FormRequest
             'jenis' => ['required', Rule::in(['topup', 'penjualan'])],
             'tanggal' => ['required', 'date'],
             'nominal' => ['required', 'numeric', 'min:0'],
+            'harga_jual' => ['required_if:jenis,penjualan', 'nullable', 'numeric', 'min:0'],
             'keterangan' => ['nullable', 'string'],
         ];
     }
@@ -31,6 +32,8 @@ class DompetPulsaTransactionRequest extends FormRequest
             'tanggal.date' => 'Format tanggal tidak valid.',
             'nominal.required' => 'Nominal wajib diisi.',
             'nominal.numeric' => 'Nominal harus berupa angka.',
+            'harga_jual.required_if' => 'Harga jual wajib diisi untuk transaksi penjualan.',
+            'harga_jual.numeric' => 'Harga jual harus berupa angka.',
         ];
     }
 }
