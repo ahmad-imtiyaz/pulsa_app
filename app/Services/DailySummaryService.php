@@ -146,6 +146,7 @@ class DailySummaryService
         $totalSaldoAwal = 0;
         $totalTopup = 0;
         $totalPenjualan = 0;
+        $totalPenjualanJual = 0;
         $totalSaldoAkhir = 0;
         $totalLaba = 0;
 
@@ -155,6 +156,7 @@ class DailySummaryService
             $totalSaldoAwal += $h['saldo_awal'];
             $totalTopup += $h['topup'];
             $totalPenjualan += $h['penjualan'];
+            $totalPenjualanJual += $h['harga_jual'];
             $totalSaldoAkhir += $h['saldo_akhir'];
             $totalLaba += $h['laba'];
         }
@@ -162,6 +164,7 @@ class DailySummaryService
         $summary->pulsa_saldo_awal = $totalSaldoAwal;
         $summary->pulsa_topup = $totalTopup;
         $summary->pulsa_penjualan = $totalPenjualan;
+        $summary->pulsa_penjualan_jual = $totalPenjualanJual;
         $summary->pulsa_saldo_akhir = $totalSaldoAkhir;
         $summary->pulsa_laba = $totalLaba;
     }
